@@ -47,7 +47,7 @@ export function Sidebar() {
         </div>
         <div>
           <div className="font-display text-lg font-bold leading-none">BIBLIA-TECH</div>
-          <div className="text-xs text-sidebar-foreground/60 mt-1">BiblioScan</div>
+          <div className="text-xs text-sidebar-foreground/60 mt-1">BIBLIA-TECH</div>
         </div>
       </div>
       <ul className="space-y-1 flex-1">
@@ -86,7 +86,7 @@ export function MobileHeader() {
       </div>
       <div>
         <div className="font-display font-bold leading-none">BIBLIA-TECH</div>
-        <div className="text-[10px] text-muted-foreground">BiblioScan</div>
+        <div className="text-[10px] text-muted-foreground">BIBLIA-TECH</div>
       </div>
     </header>
   );

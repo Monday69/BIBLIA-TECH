@@ -26,7 +26,7 @@ function HomePage() {
       >
         <div className="relative z-10 max-w-xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-accent/20 backdrop-blur px-3 py-1 text-xs font-medium text-accent mb-4">
-            <BookMarked className="h-3.5 w-3.5" /> BiblioScan
+            <BookMarked className="h-3.5 w-3.5" /> BIBLIA-TECH
           </div>
           <h1 className="font-display text-4xl lg:text-5xl font-bold leading-tight">
             Vérifiez l'ordre de vos livres en un instant
