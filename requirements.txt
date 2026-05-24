@@ -1,0 +1,9 @@
+fastapi==0.136.3
+uvicorn==0.48.0
+ultralytics==8.4.41
+opencv-python-headless==4.13.0.92
+pillow==11.1.0
+numpy==1.26.4
+python-multipart==0.0.6
+torch==2.3.0  # GPU support (ajuster selon votre config)
+torchvision==0.18.0

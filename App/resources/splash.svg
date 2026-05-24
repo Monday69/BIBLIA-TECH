@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" width="2732" height="2732">
+  <!-- Fond : Lin beige (#e8e0cf = --background light) -->
+  <rect width="2732" height="2732" fill="#e8e0cf"/>
+
+  <!-- Cercle décoratif de fond (Sauge très clair) -->
+  <circle cx="1366" cy="1366" r="680" fill="#3d6b51" opacity="0.07"/>
+  <circle cx="1366" cy="1366" r="520" fill="#3d6b51" opacity="0.06"/>
+
+  <!-- Icône livre (centré, 500×420 px) -->
+  <g transform="translate(1366, 1260)">
+    <!-- Livre gauche -->
+    <path d="M0 -200 L-252 -155 L-252 220 L0 185 Z" fill="#e8d5b0"/>
+    <!-- Livre droite -->
+    <path d="M0 -200 L252 -155 L252 220 L0 185 Z" fill="#d4b896"/>
+    <!-- Reliure -->
+    <rect x="-8" y="-204" width="16" height="393" rx="4" fill="#2a4d39"/>
+    <!-- Lignes page gauche -->
+    <rect x="-232" y="-60" width="200" height="10" rx="5" fill="#3d6b51" opacity="0.30"/>
+    <rect x="-232" y="-35" width="180" height="10" rx="5" fill="#3d6b51" opacity="0.30"/>
+    <rect x="-232" y="-10" width="190" height="10" rx="5" fill="#3d6b51" opacity="0.30"/>
+    <rect x="-232" y="15"  width="165" height="10" rx="5" fill="#3d6b51" opacity="0.30"/>
+    <rect x="-232" y="40"  width="185" height="10" rx="5" fill="#3d6b51" opacity="0.30"/>
+    <rect x="-232" y="65"  width="170" height="10" rx="5" fill="#3d6b51" opacity="0.30"/>
+    <!-- Lignes page droite -->
+    <rect x="32" y="-60" width="192" height="10" rx="5" fill="#3d6b51" opacity="0.22"/>
+    <rect x="32" y="-35" width="175" height="10" rx="5" fill="#3d6b51" opacity="0.22"/>
+    <rect x="32" y="-10" width="185" height="10" rx="5" fill="#3d6b51" opacity="0.22"/>
+    <rect x="32" y="15"  width="160" height="10" rx="5" fill="#3d6b51" opacity="0.22"/>
+    <rect x="32" y="40"  width="180" height="10" rx="5" fill="#3d6b51" opacity="0.22"/>
+    <rect x="32" y="65"  width="168" height="10" rx="5" fill="#3d6b51" opacity="0.22"/>
+    <!-- Marqueur ArUco (coin bas-droit) -->
+    <rect x="168" y="100" width="56" height="56" rx="7" fill="#c4956a" opacity="0.9"/>
+    <rect x="178" y="110" width="36" height="36" rx="2" fill="#2a4d39"/>
+    <rect x="184" y="116" width="24" height="24" rx="1" fill="#c4956a"/>
+    <rect x="190" y="122" width="12" height="12" rx="1" fill="#2a4d39"/>
+  </g>
+
+  <!-- Nom de l'application -->
+  <text
+    x="1366"
+    y="1620"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="148"
+    font-weight="700"
+    letter-spacing="18"
+    fill="#2a4d39"
+  >BIBLIA-TECH</text>
+
+  <!-- Sous-titre -->
+  <text
+    x="1366"
+    y="1710"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="68"
+    font-weight="400"
+    letter-spacing="6"
+    fill="#3d6b51"
+    opacity="0.75"
+  >Gestion intelligente de bibliothèque</text>
+</svg>

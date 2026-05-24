@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      viewport-fit=cover  : étend l'app jusqu'aux bords (notch, barre de navigation).
+      user-scalable=no    : désactive le pinch-to-zoom (comportement app native).
+      initial-scale=1.0   : pas de zoom au démarrage.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+    />
+
+    <!-- Couleur de la barre de statut Android (--primary : sauge foncé) -->
+    <meta name="theme-color" content="#3d6b51" />
+
+    <!-- Android : autorise le mode plein écran webapp -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- iOS / Safari (si portage futur vers iOS) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="BIBLIA-TECH" />
+
+    <title>BIBLIA-TECH</title>
+
+    <!--
+      Note : Capacitor injecte automatiquement capacitor.js dans le WebView natif.
+      Ce script établit le bridge entre React et les plugins natifs Android.
+      Il n'est PAS chargé en développement web classique (isNative() = false).
+    -->
+  </head>
+  <body>
+    <!--
+      #root : point de montage React.
+      Stylesé via styles.css (importé dans mobile-main.tsx).
+      Le fond est transparent pendant le chargement — le SplashScreen Capacitor
+      masque l'écran jusqu'à ce que React soit prêt.
+    -->
+    <div id="root"></div>
+    <script type="module" src="/src/mobile-main.tsx"></script>
+  </body>
+</html>

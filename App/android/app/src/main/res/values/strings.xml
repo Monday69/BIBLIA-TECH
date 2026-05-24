@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BIBLIA-TECH</string>
+    <string name="title_activity_main">BIBLIA-TECH</string>
+    <string name="package_name">com.bibliatech.app</string>
+    <string name="custom_url_scheme">com.bibliatech.app</string>
+</resources>

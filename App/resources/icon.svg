@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Fond : Sauge foncé (#3d6b51 = --primary) -->
+  <rect width="1024" height="1024" rx="220" fill="#3d6b51"/>
+
+  <!-- Livre gauche (page gauche ouverte) : Lin beige -->
+  <path d="M512 240 L260 290 L260 734 L512 700 Z" fill="#e8d5b0" opacity="0.95"/>
+
+  <!-- Livre droite (page droite ouverte) : Lin légèrement plus sombre -->
+  <path d="M512 240 L764 290 L764 734 L512 700 Z" fill="#d4b896" opacity="0.95"/>
+
+  <!-- Reliure centrale -->
+  <rect x="504" y="236" width="16" height="468" rx="4" fill="#2a4d39"/>
+
+  <!-- Lignes de texte (page gauche) -->
+  <rect x="290" y="360" width="190" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+  <rect x="290" y="390" width="170" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+  <rect x="290" y="420" width="180" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+  <rect x="290" y="450" width="155" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+  <rect x="290" y="480" width="175" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+  <rect x="290" y="510" width="160" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+  <rect x="290" y="540" width="180" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+  <rect x="290" y="570" width="150" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+  <rect x="290" y="600" width="170" height="12" rx="6" fill="#2a4d39" opacity="0.35"/>
+
+  <!-- Lignes de texte (page droite) -->
+  <rect x="544" y="360" width="190" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+  <rect x="544" y="390" width="170" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+  <rect x="544" y="420" width="180" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+  <rect x="544" y="450" width="155" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+  <rect x="544" y="480" width="175" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+  <rect x="544" y="510" width="160" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+  <rect x="544" y="540" width="180" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+  <rect x="544" y="570" width="150" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+  <rect x="544" y="600" width="170" height="12" rx="6" fill="#2a4d39" opacity="0.30"/>
+
+  <!-- Point de scan ArUco (coin bas-droit de la page droite) -->
+  <rect x="690" y="620" width="48" height="48" rx="6" fill="#c4956a" opacity="0.9"/>
+  <rect x="700" y="630" width="28" height="28" rx="2" fill="#2a4d39"/>
+  <rect x="706" y="636" width="16" height="16" rx="1" fill="#c4956a"/>
+  <rect x="710" y="640" width="8"  height="8"  rx="1" fill="#2a4d39"/>
+</svg>

@@ -1,0 +1,47 @@
+# ─── Build Android natif ──────────────────────────────────────────────────────
+# android/ est généré par "npx cap add android" et modifié par "npx cap sync".
+# Il est recommandé de le versionner en équipe (permet de partager les configs
+# Gradle, AndroidManifest.xml, network_security_config.xml...).
+# Seuls les artefacts de BUILD sont ignorés ci-dessous.
+
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+android/.navigation/
+android/app/release/
+
+# ─── Assets générés automatiquement ──────────────────────────────────────────
+# Générés par "@capacitor/assets generate" depuis App/resources/icon.png
+# (ne pas versionner — régénérés à chaque npm run assets)
+android/app/src/main/res/drawable*/
+android/app/src/main/res/mipmap*/
+
+# ─── Build React SPA mobile ───────────────────────────────────────────────────
+# Généré par "npm run build:mobile" depuis la racine du projet.
+# Contenu copié dans android/ lors du "npx cap sync".
+www/
+
+# ─── Dépendances ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ─── Keystore de signature — NE JAMAIS COMMITTER ──────────────────────────────
+# Ces fichiers contiennent la clé privée de signature de l'APK release.
+# Les perdre = impossible de mettre à jour l'app sur le Play Store.
+# Les exposer = risque de publication malveillante.
+*.keystore
+*.jks
+*.p12
+release.properties
+key.properties
+
+# ─── Variables d'environnement locales ────────────────────────────────────────
+.env.local
+.env.*.local
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
