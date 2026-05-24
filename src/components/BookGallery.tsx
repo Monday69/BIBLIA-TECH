@@ -15,9 +15,10 @@ type Book = { id: number; src: string };
 type BookGalleryProps = {
   crops: string[];
   onClose: () => void;
+  onCropsChange?: (remaining: string[]) => void;
 };
 
-export function BookGallery({ crops: initialCrops, onClose }: BookGalleryProps) {
+export function BookGallery({ crops: initialCrops, onClose, onCropsChange }: BookGalleryProps) {
   const [books, setBooks] = useState<Book[]>(() =>
     initialCrops.map((src, i) => ({ id: i, src }))
   );
@@ -63,6 +64,8 @@ export function BookGallery({ crops: initialCrops, onClose }: BookGalleryProps) 
       setCurrentIdx(nextIdx);
       setIsDeleting(false);
       setSwipeY(0);
+      // Notifier le parent du nouveau tableau de crops
+      onCropsChange?.(nextBooks.map((b) => b.src));
     }, 320);
   }, [books, currentIdx, isDeleting]);
 

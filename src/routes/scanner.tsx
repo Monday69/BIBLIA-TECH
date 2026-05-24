@@ -371,6 +371,11 @@ function ScannerPage() {
         <BookGallery
           crops={result.crops}
           onClose={() => setGalleryOpen(false)}
+          onCropsChange={(remaining) =>
+            setResult((prev) =>
+              prev ? { ...prev, crops: remaining, book_count: remaining.length } : prev
+            )
+          }
         />
       )}
     </div>
