@@ -119,7 +119,7 @@ export function BookGallery({ crops: initialCrops, onClose, onCropsChange }: Boo
 
   if (books.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-6">
+      <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-6">
         <div className="text-center space-y-2">
           <Trash2 className="h-10 w-10 text-muted-foreground mx-auto" />
           <p className="font-semibold">Toutes les segmentations ont été supprimées.</p>
@@ -138,7 +138,7 @@ export function BookGallery({ crops: initialCrops, onClose, onCropsChange }: Boo
   const swipeOpacity = swipeY > 40 ? Math.max(0, 1 - (swipeY - 40) / 90) : 1;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col select-none">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col select-none">
       {/* ── En-tête ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
         <h2 className="font-semibold text-base">Gérer la segmentation</h2>
