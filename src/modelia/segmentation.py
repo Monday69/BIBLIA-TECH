@@ -68,7 +68,7 @@ def traiter_image_segmentation(image_bytes):
             conf = box.conf[0].item()
             contour = np.array(mask, dtype=np.int32)
             rect = cv2.minAreaRect(contour)
-            box_points = np.int0(cv2.boxPoints(rect))
+            box_points = np.intp(cv2.boxPoints(rect))
 
             w, h = rect[1][0], rect[1][1]
             if w > h:
