@@ -121,6 +121,7 @@ def traiter_image_segmentation(image_bytes):
 
             if center_y > (hauteur_image * 0.25) and h / max(w, 1) > ASPECT_RATIO_MIN:
                 valid_books.append({
+                    "contour": contour,     # masque exact YOLO (pour le fond sombre)
                     "box_points": box_points,
                     "conf": conf,
                     "center_x": center_x,
@@ -174,23 +175,27 @@ def traiter_image_segmentation(image_bytes):
         _, buf = cv2.imencode(".jpg", warped, [cv2.IMWRITE_JPEG_QUALITY, 88])
         crops_base64.append(f"data:image/jpeg;base64,{base64.b64encode(buf).decode('utf-8')}")
 
-    # 6. Annotation de l'image complète
-    for i, book in enumerate(livres_nettoyes):
-        cv2.drawContours(img, [book["box_points"]], 0, (0, 255, 0), 2)
-        cv2.putText(
-            img,
-            f"#{i + 1}",
-            (book["box_points"][0][0], book["box_points"][0][1] - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.9,
-            (0, 255, 0),
-            2,
-        )
+    # 6. Fond sombre : zones hors livres assombries à 40%, livres à pleine luminosité
+    book_mask = np.zeros(img.shape[:2], dtype=np.uint8)
+    for book in livres_nettoyes:
+        cv2.fillPoly(book_mask, [book["contour"]], 255)
 
-    # 7. Annotation de l'ID étagère si détecté
+    dark_bg = (img * 0.40).astype(np.uint8)
+    img = np.where(book_mask[:, :, np.newaxis] > 0, img, dark_bg)
+
+    # 7. Annotation de l'image : contours épais + numéros en gras
+    for i, book in enumerate(livres_nettoyes):
+        cv2.drawContours(img, [book["box_points"]], 0, (0, 255, 0), 4)
+        label_pos = (book["box_points"][0][0], book["box_points"][0][1] - 12)
+        # Ombre noire pour la lisibilité du texte
+        cv2.putText(img, f"#{i + 1}", label_pos, cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 5)
+        cv2.putText(img, f"#{i + 1}", label_pos, cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 3)
+
+    # 8. Annotation de l'ID étagère si détecté
     if etagere_id is not None:
         label = f"Etagere #{etagere_id}"
-        cv2.putText(img, label, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 200, 255), 3)
+        cv2.putText(img, label, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 0), 5)
+        cv2.putText(img, label, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 200, 255), 3)
 
     _, buffer = cv2.imencode(".jpg", img)
     img_str = base64.b64encode(buffer).decode("utf-8")
