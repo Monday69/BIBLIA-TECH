@@ -47,7 +47,7 @@ def detecter_aruco(img_brute):
         aruco_dict = cv2.aruco.getPredefinedDictionary(dict_type)
         params = cv2.aruco.DetectorParameters()
         detector = cv2.aruco.ArucoDetector(aruco_dict, params)
-        corners, ids, _ = detector.detectMarkers(gray)
+        _, ids, _ = detector.detectMarkers(gray)
         if ids is not None and len(ids) > 0:
             etagere_id = int(ids[0][0])
             print(f"✅ Marqueur ArUco détecté — ID étagère : {etagere_id}")
@@ -142,7 +142,24 @@ def traiter_image_segmentation(image_bytes):
             else:
                 livres_nettoyes.append(book)
 
-    # 5. Extraction des crops individuels (redressement perspective)
+    # 5. Calcul des boîtes englobantes normalisées (pour les overlays cliquables frontend)
+    img_h_px, img_w_px = img.shape[:2]
+    books_info = []
+    for i, book in enumerate(livres_nettoyes):
+        pts = book["box_points"]
+        x_min = int(max(0, pts[:, 0].min()))
+        y_min = int(max(0, pts[:, 1].min()))
+        x_max = int(min(img_w_px, pts[:, 0].max()))
+        y_max = int(min(img_h_px, pts[:, 1].max()))
+        books_info.append({
+            "index": i,
+            "x": round(x_min / img_w_px, 4),
+            "y": round(y_min / img_h_px, 4),
+            "w": round((x_max - x_min) / img_w_px, 4),
+            "h": round((y_max - y_min) / img_h_px, 4),
+        })
+
+    # 6. Extraction des crops individuels (redressement perspective)
     crops_base64 = []
     for book in livres_nettoyes:
         rect_pts = order_points(book["box_points"].astype("float32"))
@@ -183,5 +200,6 @@ def traiter_image_segmentation(image_bytes):
         "book_count": len(livres_nettoyes),
         "etagere_id": etagere_id,
         "image_base64": f"data:image/jpeg;base64,{img_str}",
-        "crops": crops_base64,              # liste des images individuelles de chaque livre
+        "crops": crops_base64,
+        "books_info": books_info,           # coordonnées normalisées pour overlays frontend
     }

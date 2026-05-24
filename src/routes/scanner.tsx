@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import {
   Camera, Upload, Loader2, ScanLine, X, RotateCcw,
-  CheckCircle2, AlertTriangle, HelpCircle, BookOpen, LayoutGrid,
+  CheckCircle2, AlertTriangle, HelpCircle, BookOpen, LayoutGrid, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,27 +19,93 @@ export const Route = createFileRoute("/scanner")({
   component: ScannerPage,
 });
 
-// Type aligné sur la réponse du backend
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type BookInfo = {
+  index: number;
+  x: number; // coordonnées normalisées 0-1
+  y: number;
+  w: number;
+  h: number;
+};
+
+// Représente un livre encore actif (non supprimé)
+type ActiveBook = {
+  originalIndex: number; // index dans books_info du backend
+  crop: string;          // image base64 du crop
+  bbox: BookInfo;        // position sur l'image annotée
+};
+
 type SegmentationResult = {
   status: "success" | "error";
   book_count: number;
   etagere_id: number | null;
   image_base64: string;
-  crops: string[];      // images individuelles redressées de chaque livre
+  crops: string[];
+  books_info: BookInfo[];
   message?: string;
 };
 
-// ─── Composant résumé étagère ─────────────────────────────────────────────────
+// ─── BookInspector ────────────────────────────────────────────────────────────
+// Modal qui s'ouvre quand on clique sur un livre dans l'image annotée
 
-type ShelfSummaryProps = {
-  result: SegmentationResult;
+type BookInspectorProps = {
+  book: ActiveBook;
+  onDelete: () => void;
+  onClose: () => void;
 };
 
-function ShelfSummary({ result }: ShelfSummaryProps) {
-  const { book_count, etagere_id } = result;
+function BookInspector({ book, onDelete, onClose }: BookInspectorProps) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+      onClick={onClose}
+    >
+      <div
+        className="bg-background rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* En-tête */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <span className="font-semibold">Livre #{book.originalIndex + 1}</span>
+          <button
+            onClick={onClose}
+            className="h-7 w-7 rounded-full hover:bg-muted flex items-center justify-center"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-  // Cas : aucun marqueur ArUco détecté
-  if (etagere_id === null) {
+        {/* Crop en grand */}
+        <div className="flex items-center justify-center bg-muted/20 p-4 min-h-48">
+          <img
+            src={book.crop}
+            alt={`Livre ${book.originalIndex + 1}`}
+            className="max-h-60 max-w-full object-contain rounded-lg shadow"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 p-4 border-t">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Garder
+          </Button>
+          <Button variant="destructive" onClick={onDelete} className="flex-1">
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Supprimer
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ShelfSummary ─────────────────────────────────────────────────────────────
+
+type ShelfSummaryProps = { bookCount: number; etagereId: number | null };
+
+function ShelfSummary({ bookCount, etagereId }: ShelfSummaryProps) {
+  if (etagereId === null) {
     return (
       <Card className="border-yellow-500/40 bg-yellow-500/5">
         <CardContent className="p-4 flex items-start gap-3">
@@ -51,7 +117,7 @@ function ShelfSummary({ result }: ShelfSummaryProps) {
             <div className="text-sm text-muted-foreground mt-0.5">
               Assurez-vous que le marqueur est visible et bien éclairé.
               <br />
-              <span className="font-medium">{book_count} livre(s)</span> ont tout de même été détectés.
+              <span className="font-medium">{bookCount} livre(s)</span> ont tout de même été détectés.
             </div>
           </div>
         </CardContent>
@@ -59,7 +125,6 @@ function ShelfSummary({ result }: ShelfSummaryProps) {
     );
   }
 
-  // Cas : base de données vide / non importée
   if (!hasData()) {
     return (
       <Card className="border-blue-500/40 bg-blue-500/5">
@@ -67,13 +132,13 @@ function ShelfSummary({ result }: ShelfSummaryProps) {
           <HelpCircle className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
           <div>
             <div className="font-semibold text-blue-600 dark:text-blue-400">
-              Étagère #{etagere_id} détectée
+              Étagère #{etagereId} détectée
             </div>
             <div className="text-sm text-muted-foreground mt-0.5">
-              Aucune base de données importée. Importez votre fichier .db dans la
-              section <span className="font-medium">Bibliothèque</span> pour comparer le stock attendu.
+              Aucune base de données importée. Importez votre fichier .db dans la section{" "}
+              <span className="font-medium">Bibliothèque</span> pour comparer le stock attendu.
               <br />
-              <span className="font-medium">{book_count} livre(s)</span> détectés.
+              <span className="font-medium">{bookCount} livre(s)</span> détectés.
             </div>
           </div>
         </CardContent>
@@ -81,8 +146,7 @@ function ShelfSummary({ result }: ShelfSummaryProps) {
     );
   }
 
-  // Cas : base présente → chercher l'étagère
-  const etagere: Etagere | undefined = getEtageres().find((e) => e.id === etagere_id);
+  const etagere: Etagere | undefined = getEtageres().find((e) => e.id === etagereId);
 
   if (!etagere) {
     return (
@@ -91,13 +155,12 @@ function ShelfSummary({ result }: ShelfSummaryProps) {
           <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 shrink-0" />
           <div>
             <div className="font-semibold text-orange-600 dark:text-orange-400">
-              Étagère #{etagere_id} introuvable dans la base
+              Étagère #{etagereId} introuvable dans la base
             </div>
             <div className="text-sm text-muted-foreground mt-0.5">
-              Le marqueur ArUco indique l'étagère #{etagere_id}, mais elle n'existe pas
-              dans la base importée.
+              Le marqueur ArUco indique l'étagère #{etagereId}, mais elle n'existe pas dans la base importée.
               <br />
-              <span className="font-medium">{book_count} livre(s)</span> ont été détectés.
+              <span className="font-medium">{bookCount} livre(s)</span> ont été détectés.
             </div>
           </div>
         </CardContent>
@@ -105,10 +168,9 @@ function ShelfSummary({ result }: ShelfSummaryProps) {
     );
   }
 
-  // Cas nominal : comparaison livres détectés vs attendus
   const attendus = etagere.nb_livres_attendus;
-  const isOk = book_count === attendus;
-  const diff = book_count - attendus;
+  const isOk = bookCount === attendus;
+  const diff = bookCount - attendus;
 
   return (
     <Card className={isOk ? "border-green-500/40 bg-green-500/5" : "border-red-500/40 bg-red-500/5"}>
@@ -122,9 +184,10 @@ function ShelfSummary({ result }: ShelfSummaryProps) {
           <span>{etagere.label}</span>
           <Badge
             variant="outline"
-            className={isOk
-              ? "ml-auto border-green-500 text-green-600 dark:text-green-400"
-              : "ml-auto border-red-500 text-red-600 dark:text-red-400"
+            className={
+              isOk
+                ? "ml-auto border-green-500 text-green-600 dark:text-green-400"
+                : "ml-auto border-red-500 text-red-600 dark:text-red-400"
             }
           >
             {isOk ? "✓ Conforme" : diff > 0 ? `+${diff} livre(s) en trop` : `${diff} livre(s) manquant(s)`}
@@ -139,7 +202,7 @@ function ShelfSummary({ result }: ShelfSummaryProps) {
           </div>
           <div className={`rounded-lg border p-3 text-center ${isOk ? "bg-green-500/10" : "bg-red-500/10"}`}>
             <div className={`text-2xl font-bold ${isOk ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-              {book_count}
+              {bookCount}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">Détectés</div>
           </div>
@@ -160,6 +223,10 @@ function ScannerPage() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SegmentationResult | null>(null);
+
+  // Source de vérité pour les livres non supprimés (synchronisée entre image + galerie)
+  const [activeBooks, setActiveBooks] = useState<ActiveBook[]>([]);
+  const [inspectedBook, setInspectedBook] = useState<ActiveBook | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,6 +235,7 @@ function ScannerPage() {
     setSelectedFile(f);
     setPreview(URL.createObjectURL(f));
     setResult(null);
+    setActiveBooks([]);
     setProgress(0);
     e.target.value = "";
   };
@@ -177,16 +245,14 @@ function ScannerPage() {
     setLoading(true);
     setProgress(0);
     setResult(null);
+    setActiveBooks([]);
 
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
       setProgress(20);
-      const apiResponse = await fetch(SEGMENT_ENDPOINT, {
-        method: "POST",
-        body: formData,
-      });
+      const apiResponse = await fetch(SEGMENT_ENDPOINT, { method: "POST", body: formData });
 
       setProgress(75);
 
@@ -195,6 +261,8 @@ function ScannerPage() {
         book_count: 0,
         etagere_id: null,
         image_base64: "",
+        crops: [],
+        books_info: [],
         message: `Erreur HTTP ${apiResponse.status}`,
       }));
 
@@ -202,6 +270,14 @@ function ScannerPage() {
 
       if (apiResponse.ok && data.status === "success") {
         setResult(data);
+        // Initialiser activeBooks depuis la réponse backend
+        setActiveBooks(
+          (data.books_info ?? []).map((info, i) => ({
+            originalIndex: i,
+            crop: data.crops[i] ?? "",
+            bbox: info,
+          }))
+        );
       } else {
         throw new Error(data.message || `Erreur API ${apiResponse.status}`);
       }
@@ -218,9 +294,29 @@ function ScannerPage() {
     setPreview(null);
     setSelectedFile(null);
     setResult(null);
-    setProgress(0);
+    setActiveBooks([]);
+    setInspectedBook(null);
     setGalleryOpen(false);
+    setProgress(0);
   };
+
+  // Suppression depuis l'inspecteur (clic sur image)
+  const handleInspectorDelete = () => {
+    if (!inspectedBook) return;
+    const remaining = activeBooks.filter(
+      (b) => b.originalIndex !== inspectedBook.originalIndex
+    );
+    setActiveBooks(remaining);
+    setInspectedBook(null);
+  };
+
+  // Suppression depuis la galerie (synchro par correspondance de crop)
+  const handleGalleryCropsChange = (remainingCrops: string[]) => {
+    const cropSet = new Set(remainingCrops);
+    setActiveBooks((prev) => prev.filter((b) => cropSet.has(b.crop)));
+  };
+
+  const activeCount = activeBooks.length;
 
   return (
     <div className="px-4 lg:px-10 py-6 lg:py-10 max-w-4xl mx-auto space-y-6">
@@ -274,11 +370,7 @@ function ScannerPage() {
         <Card>
           <CardContent className="p-4 space-y-4">
             <div className="relative rounded-lg overflow-hidden bg-muted">
-              <img
-                src={preview}
-                alt="aperçu étagère"
-                className="w-full object-contain max-h-[480px]"
-              />
+              <img src={preview} alt="aperçu étagère" className="w-full object-contain max-h-[480px]" />
               <button
                 onClick={reset}
                 className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center hover:bg-background"
@@ -294,9 +386,7 @@ function ScannerPage() {
                   Segmentation en cours… {progress}%
                 </div>
                 <Progress value={progress} />
-                <div className="text-xs text-muted-foreground">
-                  Détection ArUco + segmentation YOLO…
-                </div>
+                <div className="text-xs text-muted-foreground">Détection ArUco + segmentation YOLO…</div>
               </div>
             ) : (
               <Button onClick={analyze} size="lg" className="w-full bg-primary">
@@ -315,15 +405,15 @@ function ScannerPage() {
             <h2 className="font-display text-2xl font-bold">Résultats</h2>
             <Badge variant="outline" className="border-accent text-accent text-sm px-3 py-1">
               <BookOpen className="h-3.5 w-3.5 mr-1.5" />
-              {result.book_count} livre{result.book_count > 1 ? "s" : ""} détecté{result.book_count > 1 ? "s" : ""}
+              {activeCount} livre{activeCount > 1 ? "s" : ""} détecté{activeCount > 1 ? "s" : ""}
             </Badge>
           </div>
 
-          {/* Résumé étagère + comparaison stock */}
-          <ShelfSummary result={result} />
+          {/* Résumé étagère */}
+          <ShelfSummary bookCount={activeCount} etagereId={result.etagere_id} />
 
-          {/* Image annotée par YOLO */}
-          {result.book_count === 0 ? (
+          {/* Image annotée + overlays cliquables */}
+          {activeCount === 0 && (result.books_info ?? []).length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center text-muted-foreground">
                 Aucun livre détecté. Vérifiez la qualité de l'image et réessayez.
@@ -331,14 +421,52 @@ function ScannerPage() {
             </Card>
           ) : (
             <Card>
-              <CardContent className="p-4">
-                <img
-                  src={result.image_base64}
-                  alt="Segmentation des livres par YOLO"
-                  className="w-full rounded-lg object-contain"
-                />
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Chaque livre est numéroté et encadré par le modèle YOLO
+              <CardContent className="p-4 space-y-2">
+                {/* Conteneur image avec overlays */}
+                <div className="relative rounded-lg overflow-hidden">
+                  <img
+                    src={result.image_base64}
+                    alt="Segmentation des livres par YOLO"
+                    className="w-full block rounded-lg"
+                    draggable={false}
+                  />
+
+                  {/* Overlay cliquable pour chaque livre */}
+                  {(result.books_info ?? []).map((info) => {
+                    const isActive = activeBooks.some((b) => b.originalIndex === info.index);
+                    const book = activeBooks.find((b) => b.originalIndex === info.index);
+
+                    return (
+                      <div
+                        key={info.index}
+                        onClick={() => isActive && book && setInspectedBook(book)}
+                        style={{
+                          position: "absolute",
+                          left: `${info.x * 100}%`,
+                          top: `${info.y * 100}%`,
+                          width: `${info.w * 100}%`,
+                          height: `${info.h * 100}%`,
+                        }}
+                        className={`rounded transition-all duration-200 ${
+                          isActive
+                            ? "cursor-pointer hover:bg-white/15 hover:ring-2 hover:ring-white/60"
+                            : "bg-red-500/30 ring-1 ring-red-400 cursor-default"
+                        }`}
+                        title={isActive ? `Cliquer pour inspecter le livre #${info.index + 1}` : "Supprimé"}
+                      >
+                        {/* Croix rouge sur les livres supprimés */}
+                        {!isActive && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <X className="text-red-400 h-5 w-5 drop-shadow" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center">
+                  Cliquez sur un livre pour l'inspecter · Livres supprimés marqués en rouge
                 </p>
               </CardContent>
             </Card>
@@ -346,7 +474,7 @@ function ScannerPage() {
 
           {/* Boutons d'action */}
           <div className="flex flex-col sm:flex-row gap-3">
-            {result.crops.length > 0 && (
+            {activeBooks.length > 0 && (
               <Button
                 className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
                 onClick={() => setGalleryOpen(true)}
@@ -354,7 +482,7 @@ function ScannerPage() {
                 <LayoutGrid className="mr-2 h-4 w-4" />
                 Gérer la segmentation
                 <Badge variant="secondary" className="ml-2 text-xs">
-                  {result.crops.length}
+                  {activeBooks.length}
                 </Badge>
               </Button>
             )}
@@ -366,16 +494,21 @@ function ScannerPage() {
         </section>
       )}
 
+      {/* Inspecteur (clic sur l'image) */}
+      {inspectedBook && (
+        <BookInspector
+          book={inspectedBook}
+          onClose={() => setInspectedBook(null)}
+          onDelete={handleInspectorDelete}
+        />
+      )}
+
       {/* Galerie plein écran */}
-      {galleryOpen && result && result.crops.length > 0 && (
+      {galleryOpen && activeBooks.length > 0 && (
         <BookGallery
-          crops={result.crops}
+          crops={activeBooks.map((b) => b.crop)}
           onClose={() => setGalleryOpen(false)}
-          onCropsChange={(remaining) =>
-            setResult((prev) =>
-              prev ? { ...prev, crops: remaining, book_count: remaining.length } : prev
-            )
-          }
+          onCropsChange={handleGalleryCropsChange}
         />
       )}
     </div>
