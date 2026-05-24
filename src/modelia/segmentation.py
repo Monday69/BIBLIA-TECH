@@ -2,13 +2,22 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import base64
+from pathlib import Path
 
-# Chargement du modèle (le chemin est relatif à main.py au moment de l'exécution)
-MODEL_PATH = "src/modelia/best.pt"
+# Chemin absolu vers le modèle, peu importe d'où uvicorn est lancé
+MODEL_PATH = Path(__file__).parent / "best.pt"
+
+model = None
+_load_error = None
+
 try:
-    model = YOLO(MODEL_PATH)
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"Modèle introuvable : {MODEL_PATH}")
+    model = YOLO(str(MODEL_PATH))
+    print(f"✅ Modèle YOLO chargé : {MODEL_PATH}")
 except Exception as e:
-    print(f"Erreur de chargement YOLO : {e}")
+    _load_error = str(e)
+    print(f"❌ Erreur de chargement YOLO : {e}")
 
 CONF_THRESHOLD = 0.45
 ASPECT_RATIO_MIN = 2.0
@@ -33,10 +42,18 @@ def order_points(pts):
     return rect
 
 def traiter_image_segmentation(image_bytes):
-    """Reçoit les bytes de l'image, fait la détection, renvoie JSON et Base64"""
+    """Reçoit les bytes de l'image, fait la détection YOLO, renvoie JSON avec image annotée en base64."""
+
+    # Vérification que le modèle est bien chargé
+    if model is None:
+        raise RuntimeError(f"Modèle YOLO non chargé. Raison : {_load_error}")
+
     nparr = np.frombuffer(image_bytes, np.uint8)
     img_brute = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    
+
+    if img_brute is None:
+        raise ValueError("Impossible de décoder l'image. Vérifiez que le fichier est un JPG ou PNG valide.")
+
     img = normaliser_luminosite(img_brute)
     img_clean = img.copy()
     hauteur_image = img.shape[0]
@@ -52,18 +69,23 @@ def traiter_image_segmentation(image_bytes):
             contour = np.array(mask, dtype=np.int32)
             rect = cv2.minAreaRect(contour)
             box_points = np.int0(cv2.boxPoints(rect))
-            
+
             w, h = rect[1][0], rect[1][1]
-            if w > h: w, h = h, w
+            if w > h:
+                w, h = h, w
             center_x, center_y = rect[0][0], rect[0][1]
-            
+
             if center_y > (hauteur_image * 0.25) and h / max(w, 1) > ASPECT_RATIO_MIN:
                 valid_books.append({
-                    "box_points": box_points, "conf": conf,
-                    "center_x": center_x, "width": int(w), "height": int(h)
+                    "box_points": box_points,
+                    "conf": conf,
+                    "center_x": center_x,
+                    "width": int(w),
+                    "height": int(h),
                 })
 
     valid_books.sort(key=lambda x: x["center_x"])
+
     livres_nettoyes = []
     for book in valid_books:
         if not livres_nettoyes:
@@ -71,26 +93,28 @@ def traiter_image_segmentation(image_bytes):
         else:
             dernier_livre = livres_nettoyes[-1]
             if abs(book["center_x"] - dernier_livre["center_x"]) < DISTANCE_MINIMALE:
-                if book["conf"] > dernier_livre["conf"]: livres_nettoyes[-1] = book
+                if book["conf"] > dernier_livre["conf"]:
+                    livres_nettoyes[-1] = book
             else:
                 livres_nettoyes.append(book)
 
-    crops_in_memory = []
     for i, book in enumerate(livres_nettoyes):
-        rect_points = order_points(book["box_points"])
-        dst_pts = np.array([[0, 0], [book["width"] - 1, 0], [book["width"] - 1, book["height"] - 1], [0, book["height"] - 1]], dtype="float32")
-        M = cv2.getPerspectiveTransform(rect_points, dst_pts)
-        warped_crop = cv2.warpPerspective(img_clean, M, (book["width"], book["height"]))
-        crops_in_memory.append(warped_crop)
-        
         cv2.drawContours(img, [book["box_points"]], 0, (0, 255, 0), 2)
-        cv2.putText(img, f"#{i+1}", (book["box_points"][0][0], book["box_points"][0][1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+        cv2.putText(
+            img,
+            f"#{i + 1}",
+            (book["box_points"][0][0], book["box_points"][0][1] - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            (0, 255, 0),
+            2,
+        )
 
-    _, buffer = cv2.imencode('.jpg', img)
+    _, buffer = cv2.imencode(".jpg", img)
     img_str = base64.b64encode(buffer).decode("utf-8")
 
     return {
         "status": "success",
         "book_count": len(livres_nettoyes),
-        "image_base64": f"data:image/jpeg;base64,{img_str}"
+        "image_base64": f"data:image/jpeg;base64,{img_str}",
     }

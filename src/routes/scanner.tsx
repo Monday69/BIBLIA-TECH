@@ -62,23 +62,25 @@ function ScannerPage() {
 
       setProgress(75);
 
-      if (!apiResponse.ok) {
-        throw new Error(`Erreur API: ${apiResponse.status}`);
-      }
-
-      const data: SegmentationResult = await apiResponse.json();
+      // On lit toujours le JSON, même en cas d'erreur, pour avoir le vrai message
+      const data: SegmentationResult = await apiResponse.json().catch(() => ({
+        status: "error" as const,
+        book_count: 0,
+        image_base64: "",
+        message: `Erreur HTTP ${apiResponse.status}`,
+      }));
 
       setProgress(100);
 
-      if (data.status === "success") {
+      if (apiResponse.ok && data.status === "success") {
         setResult(data);
       } else {
-        throw new Error(data.message || "Erreur lors de la segmentation");
+        throw new Error(data.message || `Erreur API ${apiResponse.status}`);
       }
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Erreur inconnue";
       console.error("Erreur segmentation:", msg);
-      alert(`❌ Erreur: ${msg}`);
+      alert(`❌ ${msg}`);
     } finally {
       setLoading(false);
     }
