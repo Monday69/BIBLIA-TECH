@@ -4,7 +4,7 @@ from ultralytics import YOLO
 import base64
 from pathlib import Path
 
-# Chemin absolu vers le modèle, peu importe d'où uvicorn est lancé
+# ─── Chargement du modèle YOLO ───────────────────────────────────────────────
 MODEL_PATH = Path(__file__).parent / "best.pt"
 
 model = None
@@ -19,11 +19,46 @@ except Exception as e:
     _load_error = str(e)
     print(f"❌ Erreur de chargement YOLO : {e}")
 
+# ─── Configuration ────────────────────────────────────────────────────────────
 CONF_THRESHOLD = 0.45
 ASPECT_RATIO_MIN = 2.0
 DISTANCE_MINIMALE = 12
 
+# Dictionnaires ArUco à essayer (du plus courant au plus rare)
+ARUCO_DICTS = [
+    cv2.aruco.DICT_4X4_50,
+    cv2.aruco.DICT_4X4_100,
+    cv2.aruco.DICT_4X4_250,
+    cv2.aruco.DICT_5X5_50,
+    cv2.aruco.DICT_5X5_100,
+    cv2.aruco.DICT_6X6_50,
+    cv2.aruco.DICT_6X6_100,
+]
+
+# ─── Détection ArUco ─────────────────────────────────────────────────────────
+
+def detecter_aruco(img_brute):
+    """
+    Essaie plusieurs dictionnaires ArUco et retourne le premier ID détecté.
+    Retourne None si aucun marqueur n'est trouvé.
+    """
+    gray = cv2.cvtColor(img_brute, cv2.COLOR_BGR2GRAY)
+    for dict_type in ARUCO_DICTS:
+        aruco_dict = cv2.aruco.getPredefinedDictionary(dict_type)
+        params = cv2.aruco.DetectorParameters()
+        detector = cv2.aruco.ArucoDetector(aruco_dict, params)
+        corners, ids, _ = detector.detectMarkers(gray)
+        if ids is not None and len(ids) > 0:
+            etagere_id = int(ids[0][0])
+            print(f"✅ Marqueur ArUco détecté — ID étagère : {etagere_id}")
+            return etagere_id
+    print("⚠️  Aucun marqueur ArUco détecté dans l'image.")
+    return None
+
+# ─── Pré-traitement image ─────────────────────────────────────────────────────
+
 def normaliser_luminosite(image_cv2):
+    """CLAHE : normalise la luminosité pour améliorer la détection en conditions variables."""
     lab = cv2.cvtColor(image_cv2, cv2.COLOR_BGR2LAB)
     l_channel, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -32,6 +67,7 @@ def normaliser_luminosite(image_cv2):
     return cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
 def order_points(pts):
+    """Ordonne 4 points : Haut-Gauche, Haut-Droite, Bas-Droite, Bas-Gauche."""
     rect = np.zeros((4, 2), dtype="float32")
     s = pts.sum(axis=1)
     rect[0] = pts[np.argmin(s)]
@@ -41,10 +77,13 @@ def order_points(pts):
     rect[3] = pts[np.argmax(diff)]
     return rect
 
-def traiter_image_segmentation(image_bytes):
-    """Reçoit les bytes de l'image, fait la détection YOLO, renvoie JSON avec image annotée en base64."""
+# ─── Segmentation principale ──────────────────────────────────────────────────
 
-    # Vérification que le modèle est bien chargé
+def traiter_image_segmentation(image_bytes):
+    """
+    Reçoit les bytes de l'image, détecte le marqueur ArUco (ID étagère),
+    segmente les livres avec YOLO, retourne l'image annotée en base64.
+    """
     if model is None:
         raise RuntimeError(f"Modèle YOLO non chargé. Raison : {_load_error}")
 
@@ -54,10 +93,15 @@ def traiter_image_segmentation(image_bytes):
     if img_brute is None:
         raise ValueError("Impossible de décoder l'image. Vérifiez que le fichier est un JPG ou PNG valide.")
 
+    # 1. Détection ArUco sur l'image brute (avant normalisation)
+    etagere_id = detecter_aruco(img_brute)
+
+    # 2. Normalisation luminosité pour YOLO
     img = normaliser_luminosite(img_brute)
     img_clean = img.copy()
     hauteur_image = img.shape[0]
 
+    # 3. Segmentation YOLO
     results = model.predict(source=img, conf=CONF_THRESHOLD, retina_masks=True, verbose=False)
     valid_books = []
 
@@ -84,20 +128,21 @@ def traiter_image_segmentation(image_bytes):
                     "height": int(h),
                 })
 
+    # 4. Tri gauche → droite + dédoublonnage
     valid_books.sort(key=lambda x: x["center_x"])
-
     livres_nettoyes = []
     for book in valid_books:
         if not livres_nettoyes:
             livres_nettoyes.append(book)
         else:
-            dernier_livre = livres_nettoyes[-1]
-            if abs(book["center_x"] - dernier_livre["center_x"]) < DISTANCE_MINIMALE:
-                if book["conf"] > dernier_livre["conf"]:
+            dernier = livres_nettoyes[-1]
+            if abs(book["center_x"] - dernier["center_x"]) < DISTANCE_MINIMALE:
+                if book["conf"] > dernier["conf"]:
                     livres_nettoyes[-1] = book
             else:
                 livres_nettoyes.append(book)
 
+    # 5. Annotation de l'image
     for i, book in enumerate(livres_nettoyes):
         cv2.drawContours(img, [book["box_points"]], 0, (0, 255, 0), 2)
         cv2.putText(
@@ -110,11 +155,17 @@ def traiter_image_segmentation(image_bytes):
             2,
         )
 
+    # 6. Annotation de l'ID étagère si détecté
+    if etagere_id is not None:
+        label = f"Etagere #{etagere_id}"
+        cv2.putText(img, label, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 200, 255), 3)
+
     _, buffer = cv2.imencode(".jpg", img)
     img_str = base64.b64encode(buffer).decode("utf-8")
 
     return {
         "status": "success",
         "book_count": len(livres_nettoyes),
+        "etagere_id": etagere_id,           # int ou null
         "image_base64": f"data:image/jpeg;base64,{img_str}",
     }
