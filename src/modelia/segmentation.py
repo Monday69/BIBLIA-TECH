@@ -20,7 +20,7 @@ except Exception as e:
     print(f"❌ Erreur de chargement YOLO : {e}")
 
 # ─── Configuration ────────────────────────────────────────────────────────────
-CONF_THRESHOLD = 0.45
+CONF_THRESHOLD = 0.55
 ASPECT_RATIO_MIN = 2.0
 DISTANCE_MINIMALE = 12
 
@@ -142,7 +142,22 @@ def traiter_image_segmentation(image_bytes):
             else:
                 livres_nettoyes.append(book)
 
-    # 5. Annotation de l'image
+    # 5. Extraction des crops individuels (redressement perspective)
+    crops_base64 = []
+    for book in livres_nettoyes:
+        rect_pts = order_points(book["box_points"].astype("float32"))
+        dst_pts = np.array([
+            [0, 0],
+            [book["width"] - 1, 0],
+            [book["width"] - 1, book["height"] - 1],
+            [0, book["height"] - 1],
+        ], dtype="float32")
+        M = cv2.getPerspectiveTransform(rect_pts, dst_pts)
+        warped = cv2.warpPerspective(img_clean, M, (book["width"], book["height"]))
+        _, buf = cv2.imencode(".jpg", warped, [cv2.IMWRITE_JPEG_QUALITY, 88])
+        crops_base64.append(f"data:image/jpeg;base64,{base64.b64encode(buf).decode('utf-8')}")
+
+    # 6. Annotation de l'image complète
     for i, book in enumerate(livres_nettoyes):
         cv2.drawContours(img, [book["box_points"]], 0, (0, 255, 0), 2)
         cv2.putText(
@@ -155,7 +170,7 @@ def traiter_image_segmentation(image_bytes):
             2,
         )
 
-    # 6. Annotation de l'ID étagère si détecté
+    # 7. Annotation de l'ID étagère si détecté
     if etagere_id is not None:
         label = f"Etagere #{etagere_id}"
         cv2.putText(img, label, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 200, 255), 3)
@@ -166,6 +181,7 @@ def traiter_image_segmentation(image_bytes):
     return {
         "status": "success",
         "book_count": len(livres_nettoyes),
-        "etagere_id": etagere_id,           # int ou null
+        "etagere_id": etagere_id,
         "image_base64": f"data:image/jpeg;base64,{img_str}",
+        "crops": crops_base64,              # liste des images individuelles de chaque livre
     }

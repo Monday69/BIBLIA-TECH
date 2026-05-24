@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import {
   Camera, Upload, Loader2, ScanLine, X, RotateCcw,
-  CheckCircle2, AlertTriangle, HelpCircle, BookOpen,
+  CheckCircle2, AlertTriangle, HelpCircle, BookOpen, LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { getEtageres, hasData, type Etagere } from "@/lib/ConnecBase";
+import { BookGallery } from "@/components/BookGallery";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const SEGMENT_ENDPOINT = `${API_BASE_URL}/segment`;
@@ -24,6 +25,7 @@ type SegmentationResult = {
   book_count: number;
   etagere_id: number | null;
   image_base64: string;
+  crops: string[];      // images individuelles redressées de chaque livre
   message?: string;
 };
 
@@ -158,6 +160,7 @@ function ScannerPage() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SegmentationResult | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -216,6 +219,7 @@ function ScannerPage() {
     setSelectedFile(null);
     setResult(null);
     setProgress(0);
+    setGalleryOpen(false);
   };
 
   return (
@@ -340,11 +344,34 @@ function ScannerPage() {
             </Card>
           )}
 
-          <Button variant="outline" onClick={reset} className="w-full">
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Scanner une autre image
-          </Button>
+          {/* Boutons d'action */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {result.crops.length > 0 && (
+              <Button
+                className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
+                onClick={() => setGalleryOpen(true)}
+              >
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                Gérer la segmentation
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {result.crops.length}
+                </Badge>
+              </Button>
+            )}
+            <Button variant="outline" onClick={reset} className="flex-1">
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Scanner une autre image
+            </Button>
+          </div>
         </section>
+      )}
+
+      {/* Galerie plein écran */}
+      {galleryOpen && result && result.crops.length > 0 && (
+        <BookGallery
+          crops={result.crops}
+          onClose={() => setGalleryOpen(false)}
+        />
       )}
     </div>
   );
