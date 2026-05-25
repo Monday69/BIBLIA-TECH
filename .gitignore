@@ -1,32 +1,53 @@
-# Logs
+# ─── Logs ────────────────────────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
+# ─── Dépendances ─────────────────────────────────────────────────────────────
+node_modules/
 
-# Wrangler / Cloudflare
+# ─── Build ───────────────────────────────────────────────────────────────────
+dist/
+dist-ssr/
+.output/
+.vinxi/
+.nitro/
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+venv*/
+.venv/
+*.egg-info/
+
+# ─── Environnements virtuels (conda / venv) ──────────────────────────────────
+venv311/
+ocr_env/
+
+# ─── Outils tiers inutilisés ─────────────────────────────────────────────────
+.lovable/
+.tanstack/
 .wrangler/
+wrangler.jsonc
+bun.lock
+bunfig.toml
 .dev.vars
 
-# Editor directories and files
+# ─── Éditeurs ────────────────────────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# ─── Local ───────────────────────────────────────────────────────────────────
+*.local
