@@ -1,9 +1,21 @@
+# ─── Backend FastAPI ──────────────────────────────────────────────────────────
 fastapi==0.136.3
 uvicorn==0.48.0
-ultralytics==8.4.41
-opencv-python-headless==4.13.0.92
+python-multipart==0.0.29
+
+# ─── Vision / YOLO ────────────────────────────────────────────────────────────
+ultralytics==8.4.54
+opencv-python==4.13.0.92
 pillow==11.1.0
 numpy==1.26.4
-python-multipart==0.0.6
-torch==2.3.0  # GPU support (ajuster selon votre config)
+
+# ─── PyTorch (requis par YOLO et PaddleOCR) ──────────────────────────────────
+# Installer selon votre config GPU/CPU : https://pytorch.org/get-started/locally/
+torch==2.3.0
 torchvision==0.18.0
+
+# ─── OCR ─────────────────────────────────────────────────────────────────────
+# paddlepaddle 2.6.2 doit etre installe via conda (pas disponible sur PyPI) :
+#   conda install paddlepaddle==2.6.2 -c paddle -c conda-forge
+paddleocr==2.9.1
+rapidfuzz
