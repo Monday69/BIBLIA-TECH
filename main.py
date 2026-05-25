@@ -1,8 +1,9 @@
 import traceback
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from src.modelia.segmentation import traiter_image_segmentation
+from src.modelia.ocr_analysis import analyser_ocr
 
 app = FastAPI(title="API Library Scanner")
 
@@ -25,9 +26,22 @@ async def segment_endpoint(file: UploadFile = File(...)):
         resultat = traiter_image_segmentation(contents)
         return JSONResponse(content=resultat)
     except Exception as e:
-        # Log complet dans le terminal du backend
         traceback.print_exc()
-        # Retourne le message d'erreur précis au frontend
+        return JSONResponse(
+            content={"status": "error", "message": str(e)},
+            status_code=500,
+        )
+
+@app.post("/ocr")
+async def ocr_endpoint(
+    file: UploadFile = File(...),
+    catalog: str = Form(None),
+):
+    try:
+        contents = await file.read()
+        return JSONResponse(content=analyser_ocr(contents, catalog))
+    except Exception as e:
+        traceback.print_exc()
         return JSONResponse(
             content={"status": "error", "message": str(e)},
             status_code=500,

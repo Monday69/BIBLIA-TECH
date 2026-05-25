@@ -447,16 +447,20 @@ function BibliothequePage() {
     <div className="px-4 lg:px-10 py-6 lg:py-10 max-w-5xl mx-auto space-y-6">
 
       {/* En-tête */}
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-display text-3xl lg:text-4xl font-bold">
-            Bibliothèque
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Gérez vos étagères et vos livres.
-          </p>
+      <header className="space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl lg:text-4xl font-bold">
+              Bibliothèque
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Gérez vos étagères et vos livres.
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2 shrink-0 flex-wrap">
+
+        {/* Boutons d'action — ligne dédiée, scroll horizontal sur mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {/* Fallback input pour Firefox */}
           <input
             id="import-fallback-input"
@@ -470,11 +474,16 @@ function BibliothequePage() {
             size="sm"
             onClick={handleImport}
             disabled={importing}
+            className="shrink-0"
           >
             <Upload className="h-4 w-4 mr-1.5" />
-            {importing ? "Import en cours…" : "Importer SQLite"}
+            {importing ? "Import…" : "Importer"}
           </Button>
-          <Button size="sm" onClick={() => setDialog({ type: "add-etagere" })}>
+          <Button
+            size="sm"
+            onClick={() => setDialog({ type: "add-etagere" })}
+            className="shrink-0"
+          >
             <Plus className="h-4 w-4 mr-1.5" />
             Étagère
           </Button>
@@ -483,17 +492,20 @@ function BibliothequePage() {
             variant="outline"
             onClick={() => setDialog({ type: "save-options" })}
             disabled={exporting || isEmpty}
+            className="shrink-0"
           >
             <Save className="h-4 w-4 mr-1.5" />
-            {exporting ? "Enregistrement…" : "Enregistrer"}
+            {exporting ? "Enreg…" : "Enregistrer"}
           </Button>
           <Button
             size="sm"
             variant="destructive"
             onClick={() => setDialog({ type: "clear-all" })}
+            className="shrink-0"
           >
             <Eraser className="h-4 w-4 mr-1.5" />
-            Supprimer bibliothèque
+            <span className="sm:hidden">Supprimer</span>
+            <span className="hidden sm:inline">Supprimer bibliothèque</span>
           </Button>
         </div>
       </header>
@@ -569,7 +581,7 @@ function BibliothequePage() {
                   value={activeId !== null ? String(activeId) : ""}
                   onValueChange={(v) => setSelectedId(Number(v))}
                 >
-                  <SelectTrigger className="w-64">
+                  <SelectTrigger className="flex-1 sm:w-64 sm:flex-none">
                     <SelectValue placeholder="Choisir une étagère" />
                   </SelectTrigger>
                   <SelectContent>
@@ -648,15 +660,15 @@ function BibliothequePage() {
                             handleDrop(b.id);
                           }}
                           className={cn(
-                            "flex items-center gap-3 px-4 py-3 group transition-colors",
+                            "flex items-center gap-3 px-4 py-3.5 group transition-colors",
                             draggedId === b.id && "opacity-40",
                             dragOverId === b.id &&
                               draggedId !== b.id &&
                               "bg-accent/10 border-l-2 border-accent",
                           )}
                         >
-                          {/* Poignée de glisser */}
-                          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0" />
+                          {/* Poignée de glisser — masquée sur mobile (drag non supporté) */}
+                          <GripVertical className="hidden sm:block h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0" />
 
                           {/* Numéro de position */}
                           <div className="h-9 w-9 shrink-0 rounded-md bg-secondary text-secondary-foreground font-semibold text-sm flex items-center justify-center">
@@ -673,25 +685,25 @@ function BibliothequePage() {
                             </div>
                           </div>
 
-                          {/* Actions (visible au survol) */}
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Actions — toujours visibles sur mobile, au survol sur desktop */}
+                          <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
                             <button
                               onClick={() =>
                                 setDialog({ type: "edit-livre", item: b })
                               }
-                              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                              className="p-2 sm:p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                               title="Modifier"
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <Pencil className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                             </button>
                             <button
                               onClick={() =>
                                 setDialog({ type: "delete-livre", item: b })
                               }
-                              className="p-1.5 rounded-md hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors"
+                              className="p-2 sm:p-1.5 rounded-md hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors"
                               title="Supprimer"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -700,12 +712,12 @@ function BibliothequePage() {
                   )}
 
                   {/* Ajouter un livre */}
-                  <div className="px-4 py-3 border-t border-border">
+                  <div className="px-4 py-4 border-t border-border">
                     <button
                       onClick={() => setDialog({ type: "add-livre" })}
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full min-h-[44px]"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4 shrink-0" />
                       Ajouter un livre
                     </button>
                   </div>

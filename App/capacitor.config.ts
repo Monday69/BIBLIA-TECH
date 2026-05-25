@@ -3,11 +3,11 @@
  * Configuration Capacitor pour BIBLIA-TECH Android.
  *
  * Commandes à lancer depuis le dossier App/ :
- *   npm install            → installe les dépendances Capacitor
- *   npm run add:android    → génère App/android/ (une seule fois)
- *   npm run sync           → synchronise App/www/ → App/android/
- *   npm run open           → ouvre Android Studio
- *   npm run assets         → génère toutes les tailles d'icônes/splash
+ * npm install            → installe les dépendances Capacitor
+ * npm run add:android    → génère App/android/ (une seule fois)
+ * npm run sync           → synchronise App/www/ → App/android/
+ * npm run open           → ouvre Android Studio
+ * npm run assets         → génère toutes les tailles d'icônes/splash
  */
 import type { CapacitorConfig } from "@capacitor/cli";
 
@@ -24,10 +24,10 @@ const config: CapacitorConfig = {
   plugins: {
     SplashScreen: {
       // Durée d'affichage du splash avant que React soit monté
-      launchShowDuration: 2000,
+      launchShowDuration: 0,
       launchAutoHide: true,
-      // Couleur de fond du splash = Lin beige (--background light mode)
-      backgroundColor: "#e8e0cf",
+      // Couleur de fond du splash = blanc
+      backgroundColor: "#ffffff",
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
@@ -74,11 +74,13 @@ const config: CapacitorConfig = {
     //     qu'en présence du serveur de dev sur le même réseau WiFi).
     //
     // url: "http://192.168.1.XX:5173",
-    // cleartext: true,
     // ─────────────────────────────────────────────────────────────────────────
 
+    // 👇 AJOUT REQUIS ICI : Autorise les requêtes HTTP (non sécurisées par HTTPS) vers ton backend local FastAPI
+    cleartext: true,
+
     // En production : charge les assets depuis le bundle embarqué (App/www/)
-    androidScheme: "https",
+    androidScheme: "http",
   },
 };
 

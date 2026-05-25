@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    network_security_config.xml
+    Autorise explicitement le trafic HTTP (non chiffré) vers le serveur FastAPI local.
+
+    Android 9+ (API 28+) bloque le cleartext par défaut même avec usesCleartextTraffic="true"
+    dans certaines configurations de WebView. Ce fichier force l'autorisation.
+
+    Pour la production : supprimer ou restreindre les domaines autorisés.
+-->
+<network-security-config>
+
+    <!-- Autoriser tout le trafic HTTP (cleartext) pour le développement -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Autorisation explicite pour le serveur FastAPI local (partage de connexion iPhone) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">172.20.10.2</domain>
+    </domain-config>
+
+    <!-- Autoriser localhost (WebView interne de Capacitor) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+
+</network-security-config>

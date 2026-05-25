@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, ScanLine, BookOpen, Settings, Info, BookMarked } from "lucide-react";
+import { Home, ScanLine, BookOpen, Settings, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -42,9 +42,7 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground p-6 sticky top-0 h-screen">
       <div className="flex items-center gap-3 mb-10">
-        <div className="h-10 w-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-          <BookMarked className="h-5 w-5 text-sidebar-primary-foreground" />
-        </div>
+        <img src="/logo-biblia-tech.svg" width="40" alt="BIBLIA-TECH" className="h-10" />
         <div>
           <div className="font-display text-lg font-bold leading-none">BIBLIA-TECH</div>
           <div className="text-xs text-sidebar-foreground/60 mt-1">BIBLIA-TECH</div>
@@ -81,9 +79,7 @@ export function Sidebar() {
 export function MobileHeader() {
   return (
     <header className="lg:hidden sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border px-4 h-14 flex items-center gap-3">
-      <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-        <BookMarked className="h-4 w-4 text-primary-foreground" />
-      </div>
+      <img src="/logo-biblia-tech.svg" width="32" alt="BIBLIA-TECH" className="h-8" />
       <div>
         <div className="font-display font-bold leading-none">BIBLIA-TECH</div>
         <div className="text-[10px] text-muted-foreground">BIBLIA-TECH</div>

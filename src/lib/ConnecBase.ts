@@ -293,7 +293,10 @@ export async function exportToSQLiteFile(
   }
 
   // ── Branche WEB (comportement INCHANGÉ) ──────────────────────────────────
-  const blob = new Blob([data], { type: "application/octet-stream" });
+  const blob = new Blob(
+    [data.buffer as ArrayBuffer],
+    { type: "application/octet-stream" }
+  );
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -364,7 +367,7 @@ async function writeToHandle(handle: any): Promise<void> {
  *   · Handle d'écriture existant → sauvegarde directe (sans dialog).
  *   · Sinon → showSaveFilePicker pré-positionné dans le dossier source.
  */
-export async function saveToFilePicker(): Promise<void> {
+export async function saveToFilePicker(_filename?: string): Promise<void> {
   // ── Branche NATIF (Android/iOS) ──────────────────────────────────────────
   if (isNative()) {
     const SQL = await ensureSqlJs();

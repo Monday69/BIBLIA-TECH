@@ -16,16 +16,40 @@
  * géré par @lovable.dev/vite-tanstack-config.
  * ────────────────────────────────────────────────────────────────────────────
  */
-import { StrictMode } from "react";
+import { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
+import { SplashScreen } from "./components/SplashScreen";
 import "./styles.css";
 
 // ─── Initialisation du router ─────────────────────────────────────────────────
 // getRouter() crée un QueryClient + charge le routeTree généré automatiquement
 // par TanStack Router (src/routeTree.gen.ts — même fichier que le build web).
 const router = getRouter();
+
+// ─── Wrapper App avec SplashScreen ────────────────────────────────────────────
+
+function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+    // Vérifier si le splash a déjà été vu cette session
+    return sessionStorage.getItem("splash-seen") !== "true";
+  });
+
+  const handleSplashComplete = () => {
+    // Marquer le splash comme vu
+    sessionStorage.setItem("splash-seen", "true");
+    setShowSplash(false);
+  };
+
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
+
+  return (
+    <RouterProvider router={router} />
+  );
+}
 
 // ─── Montage React ────────────────────────────────────────────────────────────
 const rootElement = document.getElementById("root");
@@ -39,12 +63,9 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     {/*
-      RouterProvider en mode client-side uniquement :
-      · Gère la navigation (hash / history selon la config du router)
-      · Passe le QueryClient via context (pour @tanstack/react-query)
-      · Rend RootComponent → Sidebar + MobileHeader + BottomNav + <Outlet>
-      · head() des routes met à jour document.title côté client
+      App wrapper gère l'affichage du SplashScreen initial.
+      Une fois le splash terminé, affiche le RouterProvider normal.
     */}
-    <RouterProvider router={router} />
+    <App />
   </StrictMode>,
 );

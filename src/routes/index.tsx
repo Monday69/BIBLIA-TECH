@@ -19,6 +19,11 @@ function HomePage() {
   const lastScan = scanHistory[0];
   return (
     <div className="px-4 lg:px-10 py-6 lg:py-10 max-w-6xl mx-auto space-y-8">
+      {/* Logo */}
+      <div className="flex justify-center mb-6">
+        <img src="/logo-biblia-tech.svg" width="200" alt="BIBLIA-TECH" />
+      </div>
+
       {/* Hero */}
       <section
         className="relative overflow-hidden rounded-2xl p-8 lg:p-12 text-primary-foreground"

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { books as initialBooks, shelves, loans as initialLoans, type Book, type Loan } from "@/lib/mock-data";
 import { toast } from "sonner";
 
@@ -84,13 +83,17 @@ function GestionPage() {
               <Input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Albert Camus" required />
             </div>
             <div className="space-y-1.5">
-              <Label>Étagère</Label>
-              <Select value={shelfId} onValueChange={setShelfId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {shelves.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="g-shelf">Étagère</Label>
+              <select
+                id="g-shelf"
+                value={shelfId}
+                onChange={(e) => setShelfId(e.target.value)}
+                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring h-9"
+              >
+                {shelves.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label>Position</Label>
@@ -108,12 +111,16 @@ function GestionPage() {
           <CardTitle className="text-base flex items-center gap-2"><Trash2 className="h-4 w-4 text-destructive" /> Supprimer un livre</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Select value={deleteId} onValueChange={setDeleteId}>
-            <SelectTrigger><SelectValue placeholder="Sélectionner un livre…" /></SelectTrigger>
-            <SelectContent>
-              {books.map((b) => <SelectItem key={b.id} value={b.id}>{b.title} — {b.author}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <select
+            value={deleteId}
+            onChange={(e) => setDeleteId(e.target.value)}
+            className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring h-9"
+          >
+            <option value="">Sélectionner un livre…</option>
+            {books.map((b) => (
+              <option key={b.id} value={b.id}>{b.title} — {b.author}</option>
+            ))}
+          </select>
           <Button variant="destructive" onClick={deleteBook} disabled={!deleteId}>
             <Trash2 className="mr-2 h-4 w-4" /> Confirmer la suppression
           </Button>
@@ -144,12 +151,16 @@ function GestionPage() {
           <div className="border-t border-border pt-4 space-y-3">
             <div className="text-sm font-medium">Enregistrer un emprunt</div>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Select value={loanBookId} onValueChange={setLoanBookId}>
-                <SelectTrigger><SelectValue placeholder="Livre…" /></SelectTrigger>
-                <SelectContent>
-                  {books.map((b) => <SelectItem key={b.id} value={b.id}>{b.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <select
+                value={loanBookId}
+                onChange={(e) => setLoanBookId(e.target.value)}
+                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring h-9"
+              >
+                <option value="">Livre…</option>
+                {books.map((b) => (
+                  <option key={b.id} value={b.id}>{b.title}</option>
+                ))}
+              </select>
               <Input placeholder="Nom de l'emprunteur" value={borrower} onChange={(e) => setBorrower(e.target.value)} />
             </div>
             <Button onClick={recordLoan} disabled={!loanBookId || !borrower}>
