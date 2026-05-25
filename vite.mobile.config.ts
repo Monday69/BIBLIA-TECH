@@ -54,7 +54,7 @@ export default defineConfig({
     // ── Plugin : copie sql-asm.js dans App/www/ après le build ───────────────
     // Permet à l'app Android de charger sql.js HORS LIGNE (sans CDN).
     //
-    // ⚠️  IMPORTANT — sql-asm.js vs sql-wasm :
+    //   IMPORTANT — sql-asm.js vs sql-wasm :
     //   · sql-asm.js   = pure JavaScript (ASM.js) → 1 SEUL fichier (~9 Mo)
     //                    AUCUN fichier .wasm associé.
     //   · sql-wasm.js  = version WebAssembly → nécessite sql-wasm.wasm EN PLUS.

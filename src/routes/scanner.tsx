@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { getEtageres, getLivres, getPositions, hasData, type Etagere } from "@/lib/ConnecBase";
 import { BookGallery, type GalleryBook } from "@/components/BookGallery";
 
-// 👇 MODIFICATION ICI : On force l'IP du PC
+//  MODIFICATION ICI : On force l'IP du PC
 const API_BASE_URL = "http://172.20.10.2:8000";
 const SEGMENT_ENDPOINT = `${API_BASE_URL}/segment`;
 const OCR_ENDPOINT     = `${API_BASE_URL}/ocr`;

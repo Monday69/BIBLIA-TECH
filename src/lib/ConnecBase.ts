@@ -447,7 +447,7 @@ interface SqlDatabase {
 //                      → le fichier est copié par vite.mobile.config.ts
 //                        depuis node_modules/sql.js/dist/sql-asm.js vers App/www/.
 //
-// ⚠️  sql-asm.js = 1 seul fichier JS (~9 Mo). Pas de .wasm associé.
+//   sql-asm.js = 1 seul fichier JS (~9 Mo). Pas de .wasm associé.
 //     (La version WASM serait sql-wasm.js + sql-wasm.wasm — NON utilisée ici.)
 
 const SQL_JS_CDN_URL =
