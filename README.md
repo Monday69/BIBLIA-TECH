@@ -263,15 +263,7 @@ npm run dev:android
 
 ---
 
-## 🔧 Configuration des variables d'environnement
 
-Créez un fichier `.env.local` à la racine du projet :
-
-```env
-# Backend
-VITE_API_URL=http://localhost:8000
-
----
 
 
 ##  Scripts npm disponibles
