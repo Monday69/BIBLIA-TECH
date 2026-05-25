@@ -1,303 +1,299 @@
-# BIBLIA-TECH — Scanner intelligent de bibliothèque
+# BIBLIA-TECH
 
-> Projet de semestre — Majeure Intelligence Artificielle  
-> **Matteo BERGERON · Matteo BOMBRUN · Tom VALETTE**
+**Une application intelligente de scanning et reconnaissance de livres utilisant l'IA (YOLO + OCR)**
 
----
-
-## Présentation
-
-BIBLIA-TECH est une application web/mobile permettant de vérifier automatiquement l'ordre des livres sur une étagère grâce à la vision par ordinateur.
-
-L'utilisateur photographie une étagère ; l'application :
-1. **Segmente** chaque tranche de livre avec un modèle YOLO entraîné sur mesure.
-2. **Lit** les titres/auteurs avec PaddleOCR (OCR optimisé pour les textes en biais).
-3. **Compare** les résultats à la base de données de la bibliothèque (importée en amont).
-4. **Affiche** un rapport coloré : livres bien placés, mal placés, non reconnus ou illisibles.
-
-L'application tourne en mode web (navigateur) et en mode natif Android via Capacitor.
+> Projet de semestre en Majeure Intelligence Artificielle - Année 2026
 
 ---
 
-## Stack technique
+## À propos
 
-| Couche | Technologie |
-|---|---|
-| Frontend | React 19, TypeScript, TanStack Router, Tailwind CSS, Shadcn/UI |
-| Backend | Python 3.11, FastAPI, Uvicorn |
-| Vision | YOLO v11 (Ultralytics) — modèle fine-tuné `best.pt` |
-| OCR | PaddleOCR 2.9.1 + PaddlePaddle 2.6.2 (conda) |
-| Matching | RapidFuzz (token_set_ratio + token_sort_ratio) |
-| Marqueurs | ArUco (OpenCV) — détection automatique de l'étagère |
-| Base de données | Fichier SQLite importé → stocké en localStorage (sql.js) |
-| Mobile | Capacitor 7 (Android) |
-| Build | Vite 6 |
+**BIBLIA-TECH** est une application full-stack qui permet de scanner des livres via caméra et d'en extraire automatiquement les informations (titre, auteur, ISBN, etc.) grâce à des modèles de vision par ordinateur avancés.
+
+### Fonctionnalités principales
+- **Scanner intelligent** : Capture et détection de livres via caméra (web & mobile)
+- **Détection YOLO** : Segmentation précise des livres dans les images
+- **Reconnaissance OCR** : Extraction du texte et des informations des couvertures
+- **Bibliothèque** : Gestion et consultation des livres détectés
+- **Validation BDD** : Vérification des informations contre une base de données SQLite
+- **Application mobile** : Support Android via Capacitor
 
 ---
 
-## Arborescence du projet
+## Fait par :
+
+- **Tom Vallette**
+- **Matteo Bombrun**
+- **Matteo Bergeron**
+
+---
+
+
+### Stack Technologique
+
+| Domaine | Technologies |
+|---------|--------------|
+| **Frontend** | React 18, TypeScript, TanStack Start, Vite |
+| **Mobile** | Capacitor, Android, React Native Web |
+| **Backend** | Python, FastAPI, Uvicorn |
+| **ML/CV** | YOLO v11 (ultralytics), PaddleOCR, OpenCV |
+| **Deep Learning** | PyTorch 2.3, TorchVision |
+| **Styling** | Tailwind CSS, Shadcn/UI, Radix UI |
+| **Database** | SQLite |
+| **Deployment** | Cloudflare Workers (optional) |
+
+### Architecture générale
 
 ```
-book-aura-scan/
-│
-├── main.py                     # Point d'entrée FastAPI — expose /segment et /ocr
-├── requirements.txt            # Dépendances Python (pip + conda pour PaddlePaddle)
-│
-├── package.json                # Dépendances Node.js du frontend React
-├── vite.config.ts              # Configuration Vite (alias, plugins, build)
-├── tsconfig.json               # Configuration TypeScript
-├── tailwind.config.ts          # Configuration Tailwind CSS
-├── index.html                  # Shell HTML SPA — mode web
-├── index-mobile.html           # Shell HTML SPA — mode mobile (Capacitor)
-│
-├── src/                        # Code source du frontend React
-│   │
-│   ├── routes/                 # Pages de l'application (TanStack Router)
-│   │   ├── __root.tsx          # Layout racine : barre de navigation + outlet
-│   │   ├── index.tsx           # Page d'accueil — tableau de bord et statistiques
-│   │   ├── scanner.tsx         # Page scanner — segmentation YOLO + OCR PaddleOCR
-│   │   ├── bibliotheque.tsx    # Page bibliothèque — import du fichier .db SQLite
-│   │   ├── gestion.tsx         # Page gestion — visualisation et édition des livres
-│   │   └── a-propos.tsx        # Page à propos — description du projet
-│   │
-│   ├── components/             # Composants React réutilisables
-│   │   ├── AppNav.tsx          # Navigation principale (desktop sidebar + mobile bottom bar)
-│   │   ├── BookGallery.tsx     # Galerie plein écran pour gérer les crops de livres
-│   │   ├── SplashScreen.tsx    # Écran de démarrage animé (mode mobile uniquement)
-│   │   └── ui/                 # Bibliothèque de composants Shadcn/UI (Button, Card, Badge…)
-│   │
-│   ├── lib/                    # Utilitaires et couche de données frontend
-│   │   ├── ConnecBase.ts       # Accès aux données : import SQLite via sql.js,
-│   │   │                       # lecture/écriture localStorage, export Capacitor Filesystem
-│   │   ├── utils.ts            # Helpers génériques (cn pour Tailwind, etc.)
-│   │   ├── mock-data.ts        # Données de démonstration pour la page d'accueil
-│   │   ├── error-capture.ts    # Capture globale des erreurs non gérées
-│   │   └── error-page.ts       # Page d'erreur générique
-│   │
-│   ├── modelia/                # Modules Python d'intelligence artificielle (backend)
-│   │   ├── segmentation.py     # Pipeline YOLO : détection ArUco + segmentation des livres
-│   │   │                       # + extraction des crops + annotation de l'image
-│   │   ├── ocr_analysis.py     # Pipeline OCR : PaddleOCR + fuzzy matching (RapidFuzz)
-│   │   │                       # + comparaison au catalogue + rapport coloré par statut
-│   │   └── best.pt             # Poids du modèle YOLO entraîné sur les tranches de livres
-│   │
-│   ├── router.tsx              # Configuration des routes TanStack Router
-│   ├── mobile-main.tsx         # Point d'entrée React — mode mobile (Capacitor)
-│   ├── start.ts                # Point d'entrée React — mode web
-│   ├── routeTree.gen.ts        # Arbre de routes généré automatiquement (ne pas éditer)
-│   └── styles.css              # Styles globaux Tailwind CSS + polices
-│
-└── App/                        # Shell Capacitor pour le build Android
-    ├── capacitor.config.ts     # Configuration Capacitor (appId, plugins SplashScreen/StatusBar)
-    ├── package.json            # Dépendances Capacitor (@capacitor/android, camera, filesystem…)
-    ├── android/                # Projet Android Studio généré par `npx cap add android`
-    │   └── app/src/main/       # Manifeste Android, fichiers Gradle, ressources
-    ├── www/                    # Build React copié ici par `npx cap sync` avant chaque APK
-    └── icons/                  # Icônes et splash screen générés par `npx @capacitor/assets`
+┌─────────────────────────────────────────────────────────┐
+│              Frontend (React + TypeScript)              │
+│         Web (Vite) + Mobile (Capacitor/Android)         │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                  HTTP/REST API
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│            Backend (FastAPI - Python)                   │
+│  Endpoints: /segment (YOLO) /ocr (OCR) /health         │
+└────────────────────────┬────────────────────────────────┘
+                         │
+        ┌────────────────┼────────────────┐
+        │                │                │
+   ┌────▼────┐    ┌─────▼──────┐   ┌────▼────┐
+   │YOLO v11 │    │ PaddleOCR  │   │  OpenCV │
+   │best.pt  │    │ (OCR)      │   │(Traite.)│
+   └─────────┘    └────────────┘   └────┬────┘
+                                        │
+                                   ┌────▼────┐
+                                   │SQLite DB│
+                                   └─────────┘
 ```
 
 ---
 
-## Prérequis
+## Structure du projet
 
-### Backend Python
-- **Anaconda** (recommandé) avec un environnement Python 3.11 64-bit
-- GPU NVIDIA avec CUDA (optionnel, améliore les performances OCR)
-
-### Frontend
-- Node.js ≥ 18
-- npm ≥ 9
+```
+book-aura-scan-main/
+├── Backend
+│   ├── main.py                 # Serveur FastAPI
+│   ├── requirements.txt         # Dépendances Python
+│   └── src/modelia/
+│       ├── best.pt            # Modèle YOLO v11
+│       ├── segmentation.py    # Détection + segmentation
+│       └── ocr_analysis.py    # OCR + validation BDD
+│
+├── Frontend
+│   ├── src/
+│   │   ├── components/        # Composants React
+│   │   ├── routes/           # Pages (TanStack Router)
+│   │   ├── lib/              # Utilitaires & services
+│   │   ├── mobile-main.tsx   # Point d'entrée mobile
+│   │   └── router.tsx        # Configuration routeur
+│   ├── vite.config.ts        # Config web
+│   ├── vite.mobile.config.ts # Config mobile
+│   └── package.json
+│
+├── App Mobile
+│   ├── App/capacitor.config.ts
+│   ├── App/android/          # Code natif Android
+│   └── App/src/
+│       ├── config/
+│       └── services/
+│
+└── Configuration
+    ├── tsconfig.json
+    ├── eslint.config.js
+    └── components.json
+```
 
 ---
 
 ## Installation
 
-### 1. Cloner le dépôt
+### Prérequis
+
+Avant de commencer, assurez-vous d'avoir installé :
+
+- **Node.js** (v18+) - [Télécharger](https://nodejs.org/)
+- **Python** (v3.10+) - [Télécharger](https://www.python.org/)
+- **Git** - [Télécharger](https://git-scm.com/)
+- **pip** (gestionnaire de packages Python)
+- **npm** (gestionnaire de packages Node)
+
+#### Pour Android (optionnel)
+- **Android Studio** - [Télécharger](https://developer.android.com/studio)
+- **Java Development Kit (JDK)** 11+
+- **Android SDK**
+
+### Étape 1 : Cloner le repository
 
 ```bash
-git clone https://github.com/marmat3/book-aura-scan.git
-cd book-aura-scan
+git clone https://github.com/your-repo/book-aura-scan.git
+cd book-aura-scan-main
 ```
 
-### 2. Environnement Python (backend)
+### Étape 2️ : Configuration du Backend (FastAPI + Python)
 
-Créer et activer l'environnement conda :
+#### 2.1 Créer un environnement virtuel Python
 
 ```bash
-conda create -n ocr_env python=3.11
-conda activate ocr_env
+# Créer l'environnement
+python -m venv venv
+
+# Activer l'environnement
+# Sur Windows :
+venv\Scripts\activate
+
+# Sur macOS/Linux :
+source venv/bin/activate
 ```
 
-Installer PaddlePaddle via conda (non disponible sur PyPI) :
-
-```bash
-conda install paddlepaddle==2.6.2 -c paddle -c conda-forge
-```
-
-Installer les autres dépendances Python :
+#### 2.2 Installer les dépendances Python
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> **Note GPU :** Pour activer l'accélération GPU, installer `paddlepaddle-gpu` à la place
-> et s'assurer que CUDA et cuDNN sont installés.
 
-### 3. Dépendances Node.js (frontend)
+#### 2.3 Vérifier l'installation
+
+```bash
+python -c "import torch; print(f'PyTorch OK: {torch.__version__}')"
+python -c "import cv2; print(f'OpenCV OK: {cv2.__version__}')"
+python -c "from ultralytics import YOLO; print('YOLO OK')"
+```
+
+#### 2.4 Lancer le serveur FastAPI
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+ Le serveur démarre sur `http://localhost:8000`
+
+
+### Étape 3️ : Configuration du Frontend (React + Node)
+
+#### 3.1 Installer les dépendances Node
+
+Dans un **nouveau terminal** (sans fermer le backend) :
 
 ```bash
 npm install
 ```
 
----
-
-## Lancer l'application
-
-### Backend FastAPI
-
-Depuis la racine du projet, avec l'environnement `ocr_env` activé :
-
-```bash
-conda activate ocr_env
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
-L'API sera disponible sur `http://localhost:8000`.  
-Documentation interactive : `http://localhost:8000/docs`
-
-> **Premier démarrage :** PaddleOCR télécharge ses modèles (~200 Mo) à la première exécution.
-> Le chargement prend environ 15–30 secondes. Les appels suivants sont instantanés.
-
-### Frontend React (mode web)
-
-Dans un second terminal :
+#### 3.2 Lancer le serveur de développement
 
 ```bash
 npm run dev
 ```
 
-Ouvrir `http://localhost:5173` dans le navigateur.
-
-### Adresse IP du backend (réseau local / mobile)
-
-L'adresse du serveur est configurée dans [src/routes/scanner.tsx](src/routes/scanner.tsx) :
-
-```typescript
-const API_BASE_URL = "http://<IP_DU_PC>:8000";
-```
-
-Remplacer `<IP_DU_PC>` par l'adresse IP locale du PC hébergeant le backend.
+Le frontend démarre sur le port indiqué
 
 ---
 
-## Build Android
+## Utilisation
 
-Le build Android utilise Capacitor. Les commandes se lancent depuis le dossier `App/` :
+### Mode Web (Développement)
 
-```bash
-cd App
-npm install
-```
+1. **Démarrer le backend** (Terminal 1)
+   ```bash
+   cd /chemin/vers/project
+   venv\Scripts\activate  # Windows
+   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+   ```
 
-| Commande | Description |
-|---|---|
-| `npm run add:android` | Génère le projet Android (une seule fois) |
-| `npm run assets` | Génère les icônes et splash screens |
-| `npm run sync` | Copie le build React vers `App/www/` et synchronise Android |
-| `npm run open` | Ouvre Android Studio |
-| `npm run run:android` | Lance l'app sur un appareil connecté |
+2. **Démarrer le frontend** (Terminal 2)
+   ```bash
+   npm run dev
+   ```
 
-Avant chaque `sync`, générer le build mobile depuis la racine :
+3. **Accéder à l'application**
+   ```
+   http://localhost:5173
+   ```
+
+4. **Utiliser la caméra**
+   - Allez à la page **Scanner**
+   - Donnez accès à votre caméra
+   - Pointez vers un livre pour le détecter
+
+### Mode Mobile (Android)
+
+#### 4.1 Préparation (une seule fois)
 
 ```bash
 npm run build:mobile
+npm run sync:android
+npm run cap:open  # Ouvre Android Studio
+```
+
+#### 4.2 Build et déploiement
+
+```bash
+# Build pour Android
+npm run build:android
+
+# ou directement sur appareil/émulateur
+npm run dev:android
 ```
 
 ---
 
-## Endpoints API
+##  Dépendances clés
 
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/health` | Vérification de l'état du serveur |
-| `POST` | `/segment` | Segmentation YOLO d'une image d'étagère |
-| `POST` | `/ocr` | Segmentation + OCR + comparaison catalogue |
+### Backend (Python)
+- **fastapi** - Framework web moderne
+- **uvicorn** - Serveur ASGI
+- **ultralytics** - YOLO v11 pour la détection
+- **opencv-python** - Traitement d'image
+- **paddleocr** - Reconnaissance optique de caractères
+- **torch** - Deep Learning
+- **pillow** - Traitement d'image
 
-### POST `/segment`
-
-- **Corps :** `multipart/form-data` avec le champ `file` (image JPG/PNG)
-- **Réponse :** image annotée en base64, crops individuels, coordonnées des boîtes, ID étagère (ArUco), timings
-
-### POST `/ocr`
-
-- **Corps :** `multipart/form-data` avec `file` (image) et `catalog` (JSON du catalogue localStorage)
-- **Réponse :** résultats par livre (statut, titre, auteur, score), image annotée colorée, résumé, timings
-
----
-
-## Fonctionnement de la détection
-
-### 1. Détection ArUco
-Un marqueur ArUco collé sur l'étagère permet d'identifier automatiquement son numéro. Si aucun marqueur n'est détecté, le système compare avec l'ensemble du catalogue.
-
-### 2. Segmentation YOLO
-Le modèle `best.pt` a été entraîné pour détecter les tranches de livres. Chaque détection est filtrée par ratio d'aspect (hauteur/largeur > 2) et dédoublonnée par position horizontale.
-
-### 3. OCR PaddleOCR
-Chaque tranche est redressée par correction de perspective (warp affine), prétraitée (CLAHE, agrandissement ×2, padding), puis analysée dans les deux orientations si nécessaire.
-
-### 4. Matching flou
-Le texte OCR est comparé au catalogue via RapidFuzz :
-```
-score = token_set_ratio × 0.8 + token_sort_ratio × 0.2
-```
-Un seuil de 60 % détermine si un livre est reconnu.
-
-### 5. Statuts de résultat
-
-| Statut | Couleur | Signification |
-|---|---|---|
-| `correct` | Vert | Livre reconnu et à la bonne position |
-| `wrong_position` | Orange | Livre reconnu mais mal placé |
-| `not_expected` | Rouge | Texte lu mais non trouvé dans le catalogue |
-| `unreadable` | Gris | Tranche illisible par l'OCR |
+### Frontend (Node)
+- **react** - Framework UI
+- **typescript** - Typage statique
+- **tanstack-start** - Framework full-stack
+- **vite** - Bundler ultra-rapide
+- **tailwindcss** - Styling utility-first
+- **shadcn/ui** - Composants UI de haut niveau
+- **radix-ui** - Composants accessibles
 
 ---
 
-## Base de données
+## 🔧 Configuration des variables d'environnement
 
-La base de données est un fichier SQLite contenant trois tables :
+Créez un fichier `.env.local` à la racine du projet :
 
-```
-Etageres  (id, label, nb_livres_attendus)
-Livres    (id, titre, auteur)
-Positions (etagere_id, position_index, livre_id)
+```env
+# Backend
+VITE_API_URL=http://localhost:8000
+
+---
+
+
+##  Scripts npm disponibles
+
+```bash
+npm run dev           # Démarrer le frontend (mode dev)
+npm run build         # Build pour production
+npm run preview       # Prévisualiser la build
+npm run format        # Formater le code
+
+# Mobile (Android)
+npm run dev:mobile              # Dev mode mobile
+npm run build:mobile            # Build APK
+npm run build:android           # Build complet pour Android
+npm run sync:android            # Synchroniser avec Capacitor
+npm run cap:open                # Ouvrir Android Studio
+npm run cap:run                 # Lancer sur appareil/émulateur
 ```
 
-Elle est importée depuis la page **Bibliothèque** de l'application (fichier `.db`) et stockée dans le `localStorage` du navigateur via `sql.js`. À chaque analyse OCR, le catalogue est sérialisé en JSON et envoyé avec la requête au backend — aucun fichier n'est requis côté serveur.
+
 
 ---
 
-## Variables de configuration
+**Dernière mise à jour** : Mai 2026
 
-| Fichier | Variable | Description |
-|---|---|---|
-| `src/routes/scanner.tsx` | `API_BASE_URL` | Adresse du serveur FastAPI |
-| `src/modelia/segmentation.py` | `CONF_THRESHOLD` | Seuil de confiance YOLO (défaut : 0.55) |
-| `src/modelia/segmentation.py` | `ASPECT_RATIO_MIN` | Ratio h/w minimum pour valider un livre (défaut : 2.0) |
-| `src/modelia/ocr_analysis.py` | `FUZZY_SEUIL` | Score minimum pour valider un match (défaut : 60) |
-| `App/capacitor.config.ts` | `appId` | Identifiant Android de l'application |
-
----
-
-## Auteurs
-
-| Nom | Rôle |
-|---|---|
-| **Matteo BERGERON** | Backend IA (YOLO, OCR), architecture FastAPI, intégration frontend-backend |
-| **Matteo BOMBRUN** | Frontend React (UI/UX, pages, composants), build mobile Capacitor |
-| **Tom VALETTE** | Entraînement du modèle YOLO, collecte et annotation des données |
-
----
-
-*Projet de semestre — Majeure Intelligence Artificielle — 2025/2026*
