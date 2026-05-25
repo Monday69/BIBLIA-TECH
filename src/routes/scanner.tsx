@@ -35,6 +35,13 @@ type BookEntry = {
   deleted: boolean;
 };
 
+type Timing = {
+  yolo_ms?:         number;
+  ocr_total_ms?:    number;
+  ocr_per_book_ms?: number;
+  total_ms:         number;
+};
+
 type SegmentationResult = {
   status: "success" | "error";
   book_count: number;
@@ -42,6 +49,7 @@ type SegmentationResult = {
   image_base64: string;
   crops: string[];
   books_info: BookInfo[];
+  timing?: Timing;
   message?: string;
 };
 
@@ -75,6 +83,7 @@ type OcrResult = {
   image_base64: string;
   results: OcrBookResult[];
   summary: OcrSummary;
+  timing?: Timing;
   message?: string;
 };
 
@@ -350,6 +359,10 @@ function ScannerPage() {
   const [ocrLoading,  setOcrLoading]  = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
 
+  // Metriques de performance (frontend)
+  const [segMetrics, setSegMetrics] = useState<{ serverMs: number; networkMs: number; totalMs: number } | null>(null);
+  const [ocrMetrics, setOcrMetrics] = useState<{ serverMs: number; networkMs: number; totalMs: number } | null>(null);
+
   // Compteurs dérivés
   const activeCount = books.filter((b) => !b.deleted).length;
 
@@ -374,6 +387,8 @@ function ScannerPage() {
     setOcrResult(null);
     setOcrProgress(0);
     setProgress(0);
+    setSegMetrics(null);
+    setOcrMetrics(null);
     e.target.value = "";
   };
 
@@ -385,7 +400,10 @@ function ScannerPage() {
     setBooks([]);
     setOcrResult(null);
     setOcrProgress(0);
+    setSegMetrics(null);
+    setOcrMetrics(null);
 
+    const t0 = performance.now();
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
@@ -407,6 +425,14 @@ function ScannerPage() {
       setProgress(100);
 
       if (apiResponse.ok && data.status === "success") {
+        const totalMs = Math.round(performance.now() - t0);
+        if (data.timing) {
+          setSegMetrics({
+            serverMs:  data.timing.total_ms,
+            networkMs: Math.max(0, totalMs - data.timing.total_ms),
+            totalMs,
+          });
+        }
         setResult(data);
         setBooks(
           (data.books_info ?? []).map((info, i) => ({
@@ -449,7 +475,9 @@ function ScannerPage() {
     setOcrLoading(true);
     setOcrProgress(0);
     setOcrResult(null);
+    setOcrMetrics(null);
 
+    const t0 = performance.now();
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
@@ -467,6 +495,14 @@ function ScannerPage() {
       }));
 
       if (apiResponse.ok && data.status === "success") {
+        const totalMs = Math.round(performance.now() - t0);
+        if (data.timing) {
+          setOcrMetrics({
+            serverMs:  data.timing.total_ms,
+            networkMs: Math.max(0, totalMs - data.timing.total_ms),
+            totalMs,
+          });
+        }
         setOcrResult(data);
         setOcrProgress(100);
       } else {
@@ -492,6 +528,8 @@ function ScannerPage() {
     setOcrResult(null);
     setOcrLoading(false);
     setOcrProgress(0);
+    setSegMetrics(null);
+    setOcrMetrics(null);
   };
 
   // ─── Supprimer / Restaurer ────────────────────────────────────────────────
@@ -674,6 +712,35 @@ function ScannerPage() {
             </Card>
           )}
 
+          {/* Métriques de performance — segmentation */}
+          {segMetrics && result?.timing && (
+            <Card className="border-muted bg-muted/10">
+              <CardContent className="p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Performances — Segmentation
+                </p>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="rounded-lg bg-background/70 border p-2.5">
+                    <div className="text-lg font-bold">{result.timing.yolo_ms ?? "—"} ms</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Inférence YOLO</div>
+                  </div>
+                  <div className="rounded-lg bg-background/70 border p-2.5">
+                    <div className="text-lg font-bold">{segMetrics.serverMs} ms</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Traitement serveur</div>
+                  </div>
+                  <div className="rounded-lg bg-background/70 border p-2.5">
+                    <div className="text-lg font-bold">{segMetrics.networkMs} ms</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Latence réseau</div>
+                  </div>
+                </div>
+                <div className="mt-2.5 rounded-lg bg-accent/10 border border-accent/30 p-2.5 text-center">
+                  <div className="text-lg font-bold text-accent">{segMetrics.totalMs} ms</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Durée totale (frontend)</div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Boutons d'action */}
           <div className="flex flex-col sm:flex-row gap-3">
             {books.length > 0 && (
@@ -789,6 +856,45 @@ function ScannerPage() {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* Métriques de performance — OCR */}
+              {ocrMetrics && ocrResult.timing && (
+                <Card className="border-muted bg-muted/10">
+                  <CardContent className="p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                      Performances — OCR
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                      <div className="rounded-lg bg-background/70 border p-2.5">
+                        <div className="text-lg font-bold">{ocrResult.timing.yolo_ms ?? "—"} ms</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Inférence YOLO</div>
+                      </div>
+                      <div className="rounded-lg bg-background/70 border p-2.5">
+                        <div className="text-lg font-bold">{ocrResult.timing.ocr_total_ms ?? "—"} ms</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">OCR total</div>
+                      </div>
+                      <div className="rounded-lg bg-background/70 border p-2.5">
+                        <div className="text-lg font-bold">{ocrResult.timing.ocr_per_book_ms ?? "—"} ms</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">OCR / livre</div>
+                      </div>
+                      <div className="rounded-lg bg-background/70 border p-2.5">
+                        <div className="text-lg font-bold">{ocrMetrics.networkMs} ms</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Latence réseau</div>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 grid grid-cols-2 gap-3 text-center">
+                      <div className="rounded-lg bg-background/70 border p-2.5">
+                        <div className="text-lg font-bold">{ocrMetrics.serverMs} ms</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Traitement serveur total</div>
+                      </div>
+                      <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2.5">
+                        <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{ocrMetrics.totalMs} ms</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Durée totale (frontend)</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </>
           )}

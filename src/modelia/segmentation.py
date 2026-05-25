@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 from ultralytics import YOLO
 import base64
 from pathlib import Path
@@ -87,6 +88,8 @@ def traiter_image_segmentation(image_bytes):
     if model is None:
         raise RuntimeError(f"Modèle YOLO non chargé. Raison : {_load_error}")
 
+    t_total_start = time.time()
+
     nparr = np.frombuffer(image_bytes, np.uint8)
     img_brute = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
@@ -102,7 +105,9 @@ def traiter_image_segmentation(image_bytes):
     hauteur_image = img.shape[0]
 
     # 3. Segmentation YOLO
+    t_yolo_start = time.time()
     results = model.predict(source=img, conf=CONF_THRESHOLD, retina_masks=True, verbose=False)
+    yolo_ms = round((time.time() - t_yolo_start) * 1000)
     valid_books = []
 
     for r in results:
@@ -200,11 +205,18 @@ def traiter_image_segmentation(image_bytes):
     _, buffer = cv2.imencode(".jpg", img)
     img_str = base64.b64encode(buffer).decode("utf-8")
 
+    total_ms = round((time.time() - t_total_start) * 1000)
+    print(f"Segmentation : YOLO={yolo_ms}ms | total serveur={total_ms}ms | {len(livres_nettoyes)} livre(s)")
+
     return {
         "status": "success",
         "book_count": len(livres_nettoyes),
         "etagere_id": etagere_id,
         "image_base64": f"data:image/jpeg;base64,{img_str}",
         "crops": crops_base64,
-        "books_info": books_info,           # coordonnées normalisées pour overlays frontend
+        "books_info": books_info,
+        "timing": {
+            "yolo_ms":  yolo_ms,
+            "total_ms": total_ms,
+        },
     }

@@ -5,7 +5,7 @@ Pipeline complet : YOLO segmentation + PaddleOCR + correspondance BDD SQLite.
 Appelé par POST /ocr dans main.py.
 ──────────────────────────────────────────────────────────────────────────────
 """
-import os, cv2, numpy as np, base64, re, unicodedata, sqlite3, json
+import os, cv2, numpy as np, base64, re, unicodedata, sqlite3, json, time
 
 # ─── DLLs indispensables pour PaddleOCR + PyTorch sur Windows ────────────────
 os.environ["PATH"] = (
@@ -191,6 +191,8 @@ def analyser_ocr(image_bytes: bytes, catalog_json: str | None = None) -> dict:
     if yolo_model is None:
         raise RuntimeError(f"Modèle YOLO non chargé : {_load_error}")
 
+    t_total_start = time.time()
+
     # Décodage
     arr = np.frombuffer(image_bytes, np.uint8)
     img_brute = cv2.imdecode(arr, cv2.IMREAD_COLOR)
@@ -205,7 +207,9 @@ def analyser_ocr(image_bytes: bytes, catalog_json: str | None = None) -> dict:
     img_clean = img.copy()
     h_img = img.shape[0]
 
+    t_yolo_start = time.time()
     preds = yolo_model.predict(source=img, conf=CONF_THRESHOLD, retina_masks=True, verbose=False)
+    yolo_ms = round((time.time() - t_yolo_start) * 1000)
     raw_books = []
     for r in preds:
         if r.masks is None:
@@ -253,7 +257,9 @@ def analyser_ocr(image_bytes: bytes, catalog_json: str | None = None) -> dict:
     # OCR + matching + annotation
     results = []
     counts = {"correct": 0, "wrong_position": 0, "not_expected": 0, "unreadable": 0}
+    ocr_times = []
 
+    t_ocr_start = time.time()
     for i, book in enumerate(livres):
         # Crop redressé (correction de perspective)
         rp = order_points(book["box_points"].astype("float32"))
@@ -265,8 +271,11 @@ def analyser_ocr(image_bytes: bytes, catalog_json: str | None = None) -> dict:
         crop = cv2.warpPerspective(img_clean, M, (book["w"], book["h"]))
 
         # OCR
+        t_book_start = time.time()
         ocr_text, _ = _ocr_crop(crop)
-        print(f"  📖 Livre #{i+1} — OCR : «{ocr_text}»")
+        book_ocr_ms = round((time.time() - t_book_start) * 1000)
+        ocr_times.append(book_ocr_ms)
+        print(f"  📖 Livre #{i+1} — OCR : «{ocr_text}» ({book_ocr_ms}ms)")
 
         # Matching BDD
         best_score, best_match = 0.0, None
@@ -323,7 +332,13 @@ def analyser_ocr(image_bytes: bytes, catalog_json: str | None = None) -> dict:
     _, buffer = cv2.imencode(".jpg", img_out)
     img_b64 = "data:image/jpeg;base64," + base64.b64encode(buffer).decode()
 
-    print(f"✅ OCR terminé : {counts}")
+    ocr_total_ms  = round((time.time() - t_ocr_start) * 1000)
+    ocr_per_book  = round(sum(ocr_times) / len(ocr_times)) if ocr_times else 0
+    total_ms      = round((time.time() - t_total_start) * 1000)
+
+    print(f"OCR termine : YOLO={yolo_ms}ms | OCR total={ocr_total_ms}ms | moy/livre={ocr_per_book}ms | total serveur={total_ms}ms")
+    print(f"Statuts : {counts}")
+
     return {
         "status":       "success",
         "etagere_id":   etagere_id,
@@ -331,4 +346,10 @@ def analyser_ocr(image_bytes: bytes, catalog_json: str | None = None) -> dict:
         "image_base64": img_b64,
         "results":      results,
         "summary":      {"total": len(livres), **counts},
+        "timing": {
+            "yolo_ms":         yolo_ms,
+            "ocr_total_ms":    ocr_total_ms,
+            "ocr_per_book_ms": ocr_per_book,
+            "total_ms":        total_ms,
+        },
     }
