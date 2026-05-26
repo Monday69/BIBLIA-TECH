@@ -199,6 +199,14 @@ def analyser_ocr(image_bytes: bytes, catalog_json: str | None = None) -> dict:
     if img_brute is None:
         raise ValueError("Impossible de décoder l'image.")
 
+    # 🔧 Redimensionnement urgent si trop grande (même limite que segmentation)
+    MAX_WIDTH = 1280
+    if img_brute.shape[1] > MAX_WIDTH:
+        ratio = MAX_WIDTH / img_brute.shape[1]
+        new_h = int(img_brute.shape[0] * ratio)
+        img_brute = cv2.resize(img_brute, (MAX_WIDTH, new_h), interpolation=cv2.INTER_AREA)
+        print(f"⚠️  Image OCR redimensionnée : {MAX_WIDTH}x{new_h} (économie mémoire)")
+
     # ArUco → ID étagère
     etagere_id = detecter_aruco(img_brute)
 

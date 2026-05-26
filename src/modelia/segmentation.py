@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import time
+import gc
+import torch
 from ultralytics import YOLO
 import base64
 from pathlib import Path
@@ -96,18 +98,31 @@ def traiter_image_segmentation(image_bytes):
     if img_brute is None:
         raise ValueError("Impossible de décoder l'image. Vérifiez que le fichier est un JPG ou PNG valide.")
 
-    # 1. Détection ArUco sur l'image brute (avant normalisation)
+    # 1. Redimensionnement URGENT si image trop grande (limite mémoire)
+    MAX_WIDTH = 1280  # Largeur max pour éviter dépassement RAM
+    if img_brute.shape[1] > MAX_WIDTH:
+        ratio = MAX_WIDTH / img_brute.shape[1]
+        new_h = int(img_brute.shape[0] * ratio)
+        img_brute = cv2.resize(img_brute, (MAX_WIDTH, new_h), interpolation=cv2.INTER_AREA)
+        print(f"⚠️  Image redimensionnée : {MAX_WIDTH}x{new_h} (économie mémoire)")
+
+    # 2. Détection ArUco sur l'image redimensionnée
     etagere_id = detecter_aruco(img_brute)
 
-    # 2. Normalisation luminosité pour YOLO
-    img = normaliser_luminosite(img_brute)
+    # 3. Normalisation luminosité pour YOLO
+    img  normaliser_luminosite(img_brute)
     img_clean = img.copy()
     hauteur_image = img.shape[0]
 
-    # 3. Segmentation YOLO
+    # 4. Segmentation YOLO
     t_yolo_start = time.time()
     results = model.predict(source=img, conf=CONF_THRESHOLD, retina_masks=True, verbose=False)
     yolo_ms = round((time.time() - t_yolo_start) * 1000)
+    
+    #   Nettoyage mémoire immédiat après YOLO
+    torch.cuda.empty_cache()
+    gc.collect()
+    
     valid_books = []
 
     for r in results:
@@ -207,6 +222,11 @@ def traiter_image_segmentation(image_bytes):
 
     total_ms = round((time.time() - t_total_start) * 1000)
     print(f"Segmentation : YOLO={yolo_ms}ms | total serveur={total_ms}ms | {len(livres_nettoyes)} livre(s)")
+
+    #   Nettoyage final mémoire
+    del img, img_brute, img_clean, results
+    torch.cuda.empty_cache()
+    gc.collect()
 
     return {
         "status": "success",
