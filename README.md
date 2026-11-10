@@ -109,6 +109,12 @@ book-aura-scan-main/
 
 ---
 
+## Projet lié : entraînement OCR
+
+Les scripts de génération de données synthétiques et de fine-tuning TrOCR sur des tranches de livres (jusqu'à 76 500 images) sont dans un dépôt séparé : [trocr-book-spines](https://github.com/Monday69/trocr-book-spines).
+
+---
+
 ## Installation
 
 ### Prérequis
