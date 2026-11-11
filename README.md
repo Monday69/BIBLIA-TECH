@@ -4,6 +4,10 @@
 
 > Projet de semestre en Majeure Intelligence Artificielle - Année 2026
 
+![Analyse d'une étagère : chaque livre est segmenté, lu et comparé au plan de rangement attendu](docs/images/resultat-etagere.jpg)
+
+*Vert : bien placé · Orange : mal placé · Rouge : non reconnu*
+
 ---
 
 ## À propos
@@ -17,6 +21,24 @@
 - **Bibliothèque** : Gestion et consultation des livres détectés
 - **Validation BDD** : Vérification des informations contre une base de données SQLite
 - **Application mobile** : Support Android via Capacitor
+
+---
+
+## Résultats
+
+Évaluation sur le jeu de validation (276 tranches de livres), d'après le rapport de projet.
+
+| Étape | Résultat |
+| --- | --- |
+| Segmentation (YOLOv11n-seg) | mask mAP@50 de 0,886, aucun faux positif sur l'arrière-plan |
+| Reconnaissance (PaddleOCR + fuzzy matching) | 58,3 % des livres identifiés automatiquement, 24,6 % à confirmer visuellement, 17 % non lus (tranches trop fines, reflets) |
+| Vitesse OCR | 134 ms par livre en moyenne |
+
+![Pipeline : acquisition, marqueur ArUco, segmentation YOLO, OCR, réconciliation](docs/images/pipeline.jpg)
+
+| Segmentation de livres inclinés | Application web |
+| --- | --- |
+| ![Masques YOLO sur des livres inclinés](docs/images/segmentation-yolo.jpg) | ![Écran de résultats de l'application](docs/images/application-web.jpg) |
 
 ---
 
@@ -111,9 +133,9 @@ book-aura-scan-main/
 
 ---
 
-## Projet lié : entraînement OCR
+## Expérimentation : fine-tuning TrOCR
 
-Les scripts de génération de données synthétiques et de fine-tuning TrOCR sur des tranches de livres (jusqu'à 76 500 images) sont dans un dépôt séparé : [trocr-book-spines](https://github.com/Monday69/trocr-book-spines).
+Avant PaddleOCR, nous avons tenté de fine-tuner TrOCR sur jusqu'à 76 500 tranches de livres synthétiques. Sur des photos réelles, le modèle hallucinait du texte (CER de 1,18), ce qui a motivé le passage à PaddleOCR. Les scripts de cette expérimentation sont dans [trocr-book-spines](https://github.com/Monday69/trocr-book-spines).
 
 ---
 
