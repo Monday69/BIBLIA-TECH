@@ -20,11 +20,13 @@
 
 ---
 
-## Fait par :
+## Équipe et répartition du travail
 
-- **Tom Vallette**
-- **Matteo Bombrun**
-- **Matteo Bergeron**
+| Membre | Rôle |
+| --- | --- |
+| **Matteo Bombrun** | Modèles de vision : segmentation YOLO des tranches de livres et reconnaissance de texte (OCR) |
+| **Matteo Bergeron** | Développement de l'application mobile |
+| **Tom Vallette** | Nettoyage des données et tests, charte graphique et expérience utilisateur |
 
 ---
 
